@@ -52,8 +52,8 @@ function links(text){
   var out=[],cur=null;
   items.forEach(function(l){var k=l['種別']||'その他';if(k!==cur){if(cur!==null)out.push('</ul>');out.push('<h3>'+esc(k)+'</h3><ul class="links">');cur=k}
     var t=esc(l['題名']||l['URL']);if(l['URL'])t='<a href="'+esc(l['URL'])+'">'+t+'</a>';
-    var by=[esc(l['筆者']),l['媒体']?'「'+esc(l['媒体'])+'」':'',fmtDate(l['日付'])].filter(Boolean).join('　');
-    out.push('<li>'+t+'<span class="by">'+by+'</span>'+(l['抜粋・メモ']?'<blockquote>'+esc(l['抜粋・メモ'])+'</blockquote>':'')+'</li>')});
+    var line=[fmtDate(l['日付']),t,esc(l['筆者']),l['媒体']?'「'+esc(l['媒体'])+'」':''].filter(Boolean).join('／');
+    out.push('<li>'+line+(l['抜粋・メモ']?'<blockquote>'+esc(l['抜粋・メモ'])+'</blockquote>':'')+'</li>')});
   if(cur!==null)out.push('</ul>');
   return {w:items.length?items[0].w:null,html:out.join('')};
 }

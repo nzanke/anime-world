@@ -308,6 +308,16 @@ def roles_of(w, names):
             seen.append(r['person'])
     return seen
 
+def link_line(l, kind=False):
+    """日付／題名／筆者／「媒体」（ないものは省く）"""
+    t = esc(l.get('題名') or l.get('URL'))
+    if l.get('URL'):
+        t = f'<a href="{esc(l["URL"])}">{t}</a>'
+    parts = [fmt_date(l.get('日付', '')), t, esc(l.get('筆者', '')), f'「{esc(l["媒体"])}」' if l.get('媒体') else '']
+    if kind and l.get('種別'):
+        parts.append(f'（{esc(l["種別"])}）')
+    return '／'.join(x for x in parts if x)
+
 def table(head, rows, cls=''):
     h = ''.join(f'<th>{x}</th>' for x in head)
     b = ''.join('<tr>' + ''.join(f'<td>{x}</td>' for x in row) + '</tr>' for row in rows)
@@ -382,11 +392,8 @@ for w in order:
             if k != cur:
                 if items: items.append('</ul>')
                 items.append(f'<h3>{esc(k)}</h3><ul class="links">'); cur = k
-            t = esc(l.get('題名') or l.get('URL'))
-            t = f'<a href="{esc(l["URL"])}">{t}</a>' if l.get('URL') else t
-            by = '　'.join(x for x in [esc(l.get('筆者', '')), f'「{esc(l["媒体"])}」' if l.get('媒体') else '', fmt_date(l.get('日付', ''))] if x)
             ex = f'<blockquote>{esc(l["抜粋・メモ"])}</blockquote>' if l.get('抜粋・メモ') else ''
-            items.append(f'<li>{t}<span class="by">{by}</span>{ex}</li>')
+            items.append(f'<li>{link_line(l)}{ex}</li>')
         items.append('</ul>')
         body.append(''.join(items))
     else:
@@ -563,9 +570,7 @@ lw = sorted({l['work'] for l in all_links}, key=lambda w: (works[w]['start_date'
 parts = [f'<h1>記事・評論リンク</h1><p>{len(all_links)}件。番組の放送順です。</p>']
 for w in lw:
     parts.append(f'<h2>{wlink(w)}<span class="sub">{esc(str(year_of(w) or ""))}</span></h2><ul class="links">' + ''.join(
-        f'<li>{"<a href=" + chr(34) + esc(l["URL"]) + chr(34) + ">" if l.get("URL") else ""}{esc(l.get("題名") or l.get("URL"))}{"</a>" if l.get("URL") else ""}'
-        f'<span class="by">{esc(l.get("種別", ""))}　{esc(l.get("筆者", ""))}{"「" + esc(l["媒体"]) + "」" if l.get("媒体") else ""}　{fmt_date(l.get("日付", ""))}</span></li>'
-        for l in links[w]) + '</ul>')
+        f'<li>{link_line(l, True)}</li>' for l in links[w]) + '</ul>')
 if not lw:
     parts.append('<p class="none">まだありません。</p>')
 page('links.html', '記事・評論リンク', '\n'.join(parts), crumbs=[(None, '記事・評論リンク')], current='links.html')

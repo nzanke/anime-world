@@ -111,8 +111,8 @@ blockquote{margin:.6em 0 1em;padding:.5em 1em;background:var(--pale);border-left
 blockquote p{text-indent:0;margin:0 0 .4em}
 ul.links{padding-left:1.2rem;margin:.4rem 0 1rem}
 ul.links li{margin:.5rem 0}
-ul.links .by{display:block;font-size:.8rem;color:var(--sub)}
-ul.links blockquote{font-size:.88rem;margin:.3rem 0}
+ul.links a,ul.links a:visited{color:inherit}
+ul.links blockquote{font-size:1em;margin:.3rem 0}
 
 input[type=search]{width:100%;max-width:32rem;font-size:1rem;padding:.55rem .7rem;border:1px solid #b9bcb6;border-radius:4px}
 input[type=search]:focus{outline:2px solid var(--ai);outline-offset:1px}
