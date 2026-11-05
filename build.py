@@ -590,23 +590,6 @@ q.addEventListener('input',run);})();
 page('search.html', '番組名で探す', '<h1>番組名で探す</h1><p><input id="q" type="search" placeholder="番組名の一部（ひらがな・カタカナどちらでも）" autofocus></p><ul id="res" class="names"></ul>',
      crumbs=[(None, '番組名で探す')], current='search.html', script=SEARCH_JS)
 
-# 試し書き（公開前に見た目を確かめるページ。メニューには出さない）
-shutil.copy(D('static', 'preview.js'), OUT)
-PV_RV = """---
-番組ID: w57-47
-題名: 評論の題名
-日付: 2026-11-05
----
-ここに本文。1行が1段落です。[[響け!ユーフォニアム3]] のように書くと番組へのリンク。
-## 小見出し
-> 引用"""
-PV_LK = 'w57-47,,感想,記事の題名,筆者,媒体,2006-09-30,https://example.com/,抜粋'
-page('preview.html', '試し書き', '<h1>試し書き</h1><p class="lead">評論のファイルの中身と、links.csv に足す行を貼ると、公開と同じ見た目ですぐ下に表示します。ここで書いたものは公開されません（このブラウザにだけ一時的に残ります）。</p>'
-     '<div class="pv"><label>評論（content/reviews/〇〇.md の中身）<textarea id="rv" rows="12">' + esc(PV_RV) + '</textarea></label>'
-     '<label>記事リンク（links.csv に足す行。1行1件、見出し行は不要）<textarea id="lk" rows="4">' + esc(PV_LK) + '</textarea></label>'
-     '<ul id="warn" class="warn"></ul></div><div id="out" class="pv-out"></div>',
-     crumbs=[(None, '試し書き')], script='<script src="preview.js"></script>')
-
 # このサイトについて
 about = open(D('content', 'about.md'), encoding='utf-8-sig').read() if os.path.exists(D('content', 'about.md')) else ''
 page('about.html', 'このサイトについて', '<h1>このサイトについて</h1><div class="text">' + render_body(about, '', 2) + '</div>',

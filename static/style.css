@@ -134,9 +134,3 @@ details.fold>summary:hover>*{opacity:.8}
 details.fold>summary:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
 details.fold>summary>h3{margin-top:1rem}
 
-/* 試し書き */
-.pv label{display:block;font-family:var(--gothic);font-size:.85rem;color:var(--ai);font-weight:700;margin:1rem 0 .3rem}
-.pv textarea{display:block;width:100%;margin-top:.3rem;font:400 .9rem/1.6 ui-monospace,Menlo,Consolas,monospace;padding:.6rem;border:1px solid #b9bcb6;border-radius:4px;color:var(--ink)}
-.pv textarea:focus{outline:2px solid var(--ai);outline-offset:1px}
-ul.warn{font-family:var(--gothic);font-size:.85rem;color:var(--beni);padding-left:1.2rem}
-.pv-out{margin-top:1.5rem;padding:1rem 1.2rem 1.5rem;border:1px dashed #b9bcb6;border-radius:6px}
