@@ -391,7 +391,7 @@ for w in order:
             k = l.get('種別') or 'その他'
             if k != cur:
                 if items: items.append('</ul>')
-                items.append(f'<h3>{esc(k)}</h3><ul class="links">'); cur = k
+                items.append(f'<h3 class="kind">{esc(k)}</h3><ul class="links">'); cur = k
             ex = f'<blockquote>{esc(l["抜粋・メモ"])}</blockquote>' if l.get('抜粋・メモ') else ''
             items.append(f'<li>{link_line(l)}{ex}</li>')
         items.append('</ul>')
