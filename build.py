@@ -55,7 +55,7 @@ def year_of(w):
 
 def split_studio(s):
     out = []
-    for part in re.split(r'[、／]', s or ''):
+    for part in re.split(r'[、／→⇒]', s or ''):
         part = re.sub(r'[（(][^）)]*[）)]', '', part).strip()
         part = re.sub(r'\s+', ' ', part)
         if part and part not in out and part not in ('-', '－', '―', '不明', '?'):
