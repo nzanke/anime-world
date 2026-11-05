@@ -544,15 +544,16 @@ for s, ws in studio_works.items():
     ys = [year_of(w) for w in ws if year_of(w)]
     page(S_URL[s], s, f'<h1>{esc(s)}</h1><p>{len(ws)}番組' + (f'（{min(ys)}年～{max(ys)}年）' if ys else '') + '</p>' +
          by_decade(ws, srow, ['年', '番組', '監督']), crumbs=[('studios/index.html', '制作会社別'), (None, s)], current='studios/index.html')
-sl = sorted(studio_works, key=lambda s: (min([year_of(w) or 9999 for w in studio_works[s]]), s))
-dmap = defaultdict(list)
-for s in sl:
-    y = min([year_of(w) or 9999 for w in studio_works[s]])
-    dmap['不明' if y == 9999 else decade(y)].append(s)
-parts = ['<h1>制作会社別</h1><p>最初の番組が始まった年代ごとに並べています（数字は番組数）。共同制作は両方の会社に入ります。</p>',
-         '<p class="jump">' + '　'.join(f'<a href="#d{d[:4]}">{d}</a>' for d in dmap) + '</p>']
-for d, ss in dmap.items():
-    parts.append(fold(f'{d}から', '<ul class="names">' + ''.join(f'<li>{slink(s)}<span>{len(studio_works[s])}</span></li>' for s in ss) + '</ul>', len(ss), 'd' + d[:4], '社', limit=60))
+dcount = defaultdict(Counter)        # 年代 → 制作会社 → その年代の番組数
+for s_, ws in studio_works.items():
+    for w in ws:
+        y = year_of(w)
+        dcount[decade(y) if y else '放送年不明'][s_] += 1
+first_y = {s_: min([year_of(w) or 9999 for w in ws]) for s_, ws in studio_works.items()}
+parts = ['<h1>制作会社別</h1><p>年代ごとに、その年代に始まった番組の多い順に並べています（数字はその年代の番組数）。共同制作は両方の会社に数えます。</p>']
+for d in sorted(dcount, key=lambda d: (d == '放送年不明', d)):
+    ss = sorted(dcount[d], key=lambda x: (-dcount[d][x], first_y[x], x))
+    parts.append(fold(d, '<ul class="names">' + ''.join(f'<li>{slink(x)}<span>{dcount[d][x]}</span></li>' for x in ss) + '</ul>', len(ss), 'd' + d[:4], '社', limit=60))
 page('studios/index.html', '制作会社別', '\n'.join(parts), crumbs=[(None, '制作会社別')], current='studios/index.html')
 
 # 評論の一覧・リンク集
