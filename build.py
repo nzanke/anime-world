@@ -514,27 +514,27 @@ ROLE_GROUPS = [
 ]
 gl = []
 for key, label, roles in ROLE_GROUPS:
-    rowsp = []
+    dcnt = defaultdict(Counter)       # 年代 → 人 → その年代にこの役職で担当した番組数
+    first = {}
     for p in people:
         ws = set().union(*[p_roles[p].get(r, set()) for r in roles])
-        ys = [year_of(w) for w in ws if year_of(w)]
-        if ws and ys:
-            rowsp.append((min(ys), -len(ws), p, len(ws), max(ys)))
-    if not rowsp:
+        for w in ws:
+            y = year_of(w)
+            dcnt[decade(y) if y else '放送年不明'][p] += 1
+            if y:
+                first[p] = min(first.get(p, 9999), y)
+    total = len({p for c in dcnt.values() for p in c})
+    if not total:
         continue
-    rowsp.sort()
-    parts = [f'<h1>スタッフ別：{esc(label)}</h1><p>{len(rowsp)}人。初めてこの役職を担当した年の順に並べています（数字は番組数）。</p>']
-    dmap = defaultdict(list)
-    for r in rowsp:
-        dmap[decade(r[0])].append(r)
-    parts.append('<p class="jump">' + '　'.join(f'<a href="#d{d[:4]}">{d}</a>' for d in dmap) + '</p>')
-    for d, rs in dmap.items():
-        parts.append(fold(f'{d}から', '<ul class="names">' + ''.join(
-            f'<li>{plink(p)}<span>{n}・{a}～{b}</span></li>' for a, _, p, n, b in rs) + '</ul>', len(rs), 'd' + d[:4], '人', limit=60))
+    parts = [f'<h1>スタッフ別：{esc(label)}</h1><p>{total}人。年代ごとに、その年代に始まった番組でこの役職を担当した数の多い順に並べています（数字はその年代の番組数）。</p>']
+    for d in sorted(dcnt, key=lambda d: (d == '放送年不明', d)):
+        ps = sorted(dcnt[d], key=lambda x: (-dcnt[d][x], first.get(x, 9999), x))
+        parts.append(fold(d, '<ul class="names">' + ''.join(
+            f'<li>{plink(x)}<span>{dcnt[d][x]}</span></li>' for x in ps) + '</ul>', len(ps), 'd' + d[:4], '人', limit=60))
     page(f'staff/{key}.html', label, '\n'.join(parts), crumbs=[('staff/index.html', 'スタッフ別'), (None, label)], current='staff/index.html')
-    gl.append((key, label, len(rowsp)))
+    gl.append((key, label, total))
 page('staff/index.html', 'スタッフ別',
-     '<h1>スタッフ別</h1><p>役職ごとに、担当した人を年代順に並べています。人のページでは担当した番組を年代順に一覧できます（2番組以上を担当した人と、監督・シリーズ構成・キャラクターデザインを担当した人）。</p><ul class="menu-list">' +
+     '<h1>スタッフ別</h1><p>役職ごとに、年代ごとにその年代の担当番組の多い順で並べています。人のページでは担当した番組を年代順に一覧できます（2番組以上を担当した人と、監督・シリーズ構成・キャラクターデザインを担当した人）。</p><ul class="menu-list">' +
      ''.join(f'<li><a href="{k}.html">{esc(l)}</a><span>{n}人</span></li>' for k, l, n in gl) + '</ul>',
      crumbs=[(None, 'スタッフ別')], current='staff/index.html')
 
