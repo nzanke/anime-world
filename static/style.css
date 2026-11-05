@@ -1,0 +1,135 @@
+/* 配色：白地に墨。見出しは藍（主色）、小見出しは藍に近い深い青緑（類似色）、
+   印だけに弁柄（主色の補色側）を少し使う。どれも白地とのコントラスト比 7:1 以上。 */
+:root{
+  --bg:#ffffff;
+  --ink:#262626;      /* 本文：真っ黒より少し柔らかい墨 */
+  --sub:#5f5f5f;      /* 補足 */
+  --line:#e2e3df;     /* 罫線 */
+  --pale:#f5f6f3;     /* 表の縞・引用の地 */
+  --ai:#1f3d5c;       /* 藍：見出し */
+  --ai-pale:#eaeff4;
+  --mido:#245752;     /* 深い青緑：小見出し */
+  --beni:#9a3b26;     /* 弁柄：印 */
+  --link:#1d4f86;
+  --visited:#5b3e78;
+  --mincho:"BIZ UDMincho","BIZ UD明朝","BIZ UD明朝 Medium","Hiragino Mincho ProN","Yu Mincho",serif;
+  --pmincho:"BIZ UDPMincho","BIZ UDP明朝","BIZ UDP明朝 Medium","Hiragino Mincho ProN","Yu Mincho",serif;
+  --gothic:"BIZ UDPGothic","BIZ UDPゴシック","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--pmincho);font-size:16.5px;line-height:1.85;
+  font-feature-settings:"palt" 0;word-break:normal;overflow-wrap:anywhere}
+a{color:var(--link);text-underline-offset:.2em;text-decoration-thickness:1px}
+a:visited{color:var(--visited)}
+a:hover{text-decoration-thickness:2px}
+
+.wrap{max-width:68rem;margin:0 auto;padding:0 1rem;display:grid;grid-template-columns:1fr;grid-template-areas:"head" "menu" "main" "foot"}
+header.site{grid-area:head;padding:1rem 0 .4rem;border-bottom:1px solid var(--line)}
+.sitename{font-family:var(--gothic);font-weight:700;font-size:1.15rem;color:var(--ai);text-decoration:none;letter-spacing:.04em}
+.sitename:visited{color:var(--ai)}
+nav.menu{grid-area:menu;font-family:var(--gothic);font-size:.9rem}
+nav.menu ul{list-style:none;margin:0;padding:.5rem 0;display:flex;flex-wrap:wrap;gap:.2rem 1rem;border-bottom:1px solid var(--line)}
+nav.menu a{text-decoration:none;color:var(--ink)}
+nav.menu a:hover{color:var(--link);text-decoration:underline}
+nav.menu .cur a{color:var(--ai);font-weight:700;border-bottom:2px solid var(--beni)}
+main{grid-area:main;min-width:0;padding:1rem 0 2rem}
+footer.site{grid-area:foot;border-top:1px solid var(--line);font-family:var(--gothic);font-size:.78rem;color:var(--sub);padding:.8rem 0 2rem;line-height:1.7}
+
+@media (min-width:960px){
+  body{font-size:17px}
+  .wrap{grid-template-columns:11.5rem 1fr;column-gap:2.5rem;grid-template-areas:"head head" "menu main" "foot foot"}
+  nav.menu ul{flex-direction:column;gap:0;border-bottom:0;padding:1.4rem 0;position:sticky;top:0}
+  nav.menu li{border-bottom:1px solid var(--line)}
+  nav.menu a{display:block;padding:.45rem .2rem}
+  nav.menu .cur a{border-bottom:0;border-left:3px solid var(--beni);padding-left:.6rem}
+  main{padding-top:1.4rem;max-width:50rem}
+}
+
+/* 見出し（ゴシック） */
+h1,h2,h3,h4,h5,h6,th,.meta,.crumbs,.pager,.jump,dl.staff dt,.by,.d,.w,.none,input,ul.years,.info th{font-family:var(--gothic)}
+.text,.lead,article.review blockquote{font-family:var(--mincho)}
+h1{color:var(--ai);font-size:1.55rem;letter-spacing:.03em;line-height:1.45;margin:.2rem 0 1rem;padding-bottom:.4rem;border-bottom:3px solid var(--ai)}
+h1.top{font-size:1.8rem;letter-spacing:.05em}
+h2{color:var(--ai);font-size:1.22rem;line-height:1.5;margin:2.2rem 0 .8rem;padding:.1rem 0 .1rem .6rem;border-left:6px solid var(--ai)}
+h2 .sub{font-size:.8rem;color:var(--sub);font-weight:400;margin-left:.6rem}
+h3{color:var(--mido);font-size:1.08rem;margin:1.6rem 0 .5rem;padding-bottom:.2rem;border-bottom:1px solid var(--line)}
+h4{color:var(--mido);font-size:1rem;margin:1.4rem 0 .4rem}
+h5,h6{font-size:.95rem;margin:1.2rem 0 .3rem}
+.lead{font-size:1.02rem}
+.crumbs{font-size:.8rem;color:var(--sub);margin-bottom:.8rem}
+.none{color:var(--sub);font-size:.9rem}
+.jump{font-size:.9rem;line-height:2}
+.pager{display:flex;justify-content:space-between;gap:1rem;font-size:.9rem;color:var(--sub)}
+
+/* 表 */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:.6rem 0 1rem}
+table{border-collapse:collapse;font-size:.93rem;line-height:1.6;width:100%}
+th,td{padding:.35rem .55rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+thead th{background:var(--ai-pale);color:var(--ai);font-weight:700;white-space:nowrap;border-bottom:2px solid var(--ai)}
+tbody tr:nth-child(even){background:var(--pale)}
+table.list td:first-child,table.eps td:nth-child(1),table.eps td:nth-child(3){font-family:var(--gothic);font-size:.85rem;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--sub)}
+table.eps td:nth-child(1),table.eps td:nth-child(3){white-space:nowrap}
+table.eps td:nth-child(2){min-width:9em}
+table.info{width:auto;margin:.4rem 0 1rem}
+table.info th{white-space:nowrap;color:var(--ai);background:none;font-weight:700;padding-right:1.2rem}
+table.info tr:nth-child(even){background:none}
+
+/* スタッフ欄 */
+dl.staff{display:grid;grid-template-columns:auto 1fr;gap:0;font-size:.95rem;line-height:1.7;margin:.5rem 0}
+dl.staff dt{color:var(--ai);font-size:.85rem;padding:.3rem 1rem .3rem 0;border-bottom:1px solid var(--line);max-width:13em}
+dl.staff dd{margin:0;padding:.3rem 0;border-bottom:1px solid var(--line)}
+@media (max-width:540px){dl.staff{grid-template-columns:1fr}dl.staff dt{border-bottom:0;padding-bottom:0}}
+.note,.cred,.n{color:var(--sub);font-size:.85em}
+
+/* 一覧 */
+ul.names,ul.years,ul.menu-list,ul.cols{list-style:none;padding:0;margin:.4rem 0 1rem;display:grid;gap:.1rem 1.2rem}
+ul.names{grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))}
+ul.years{grid-template-columns:repeat(auto-fill,minmax(7rem,1fr))}
+ul.cols{grid-template-columns:repeat(auto-fill,minmax(16rem,1fr))}
+ul.menu-list{grid-template-columns:1fr}
+ul.names li,ul.years li,ul.menu-list li{border-bottom:1px dotted var(--line);padding:.15rem 0;display:flex;justify-content:space-between;gap:.6rem}
+ul.names span,ul.years span,ul.menu-list span{font-family:var(--gothic);font-size:.8rem;color:var(--sub);white-space:nowrap}
+ul.menu-list a{font-family:var(--gothic);font-weight:700}
+ul.rlist{list-style:none;padding:0;margin:.4rem 0}
+ul.rlist li{padding:.35rem 0;border-bottom:1px solid var(--line)}
+ul.rlist .d{font-size:.8rem;font-variant-numeric:tabular-nums;color:var(--sub);margin-right:.8rem;display:inline-block;min-width:8.5em}
+ul.rlist .w{font-size:.8rem;color:var(--sub);margin-left:.6rem}
+
+/* 印 */
+.mk,.mk2{font-family:var(--gothic);font-size:.68rem;font-weight:700;margin-left:.4rem;padding:0 .3em;border-radius:2px;vertical-align:.15em;white-space:nowrap}
+.mk{color:#fff;background:var(--beni)}
+.mk2{color:var(--mido);border:1px solid var(--mido)}
+ul.rlist b.mk,ul.rlist b.mk2{margin:0 .5rem 0 0}
+
+/* 評論 */
+article.review{margin:1rem 0 2rem}
+article.review .meta{font-size:.8rem;color:var(--sub);margin:-.2rem 0 .8rem}
+.text p{margin:0 0 .9em;text-indent:1em;text-align:justify}
+.text ul{margin:.4em 0 1em}
+blockquote{margin:.6em 0 1em;padding:.5em 1em;background:var(--pale);border-left:3px solid var(--line);font-size:.93em}
+blockquote p{text-indent:0;margin:0 0 .4em}
+ul.links{padding-left:1.2rem;margin:.4rem 0 1rem}
+ul.links li{margin:.5rem 0}
+ul.links .by{display:block;font-size:.8rem;color:var(--sub)}
+ul.links blockquote{font-size:.88rem;margin:.3rem 0}
+
+input[type=search]{width:100%;max-width:32rem;font-size:1rem;padding:.55rem .7rem;border:1px solid #b9bcb6;border-radius:4px}
+input[type=search]:focus{outline:2px solid var(--ai);outline-offset:1px}
+
+/* 一覧の中のリンクは下線を省いて軽く見せる（マウスを重ねると下線） */
+table.list a,table.eps a,ul.names a,dl.staff a,table.info a,ul.years a{text-decoration:none}
+table.list a:hover,table.eps a:hover,ul.names a:hover,dl.staff a:hover,table.info a:hover,ul.years a:hover{text-decoration:underline}
+
+/* 開閉する見出し */
+details.fold{margin:0}
+details.fold>summary{list-style:none;cursor:pointer}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary>h2,details.fold>summary>h3{display:flex;align-items:baseline;gap:.6rem}
+details.fold>summary>*::before{content:"";flex:none;width:.45em;height:.45em;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
+  transform:rotate(-45deg);transition:transform .15s;margin-right:.1rem;position:relative;top:-.1em}
+details.fold[open]>summary>*::before{transform:rotate(45deg)}
+details.fold>summary .cnt{font-size:.75rem;font-weight:400;color:var(--sub)}
+details.fold>summary:hover>*{opacity:.8}
+details.fold>summary:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+details.fold>summary>h3{margin-top:1rem}
