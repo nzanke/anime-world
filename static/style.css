@@ -134,3 +134,6 @@ details.fold>summary:hover>*{opacity:.8}
 details.fold>summary:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
 details.fold>summary>h3{margin-top:1rem}
 
+
+/* 評論・記事の種別の見出しは本文と同じ大きさ */
+h3.kind{font-size:1em}
