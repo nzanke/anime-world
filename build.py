@@ -62,11 +62,34 @@ def split_studio(s):
             out.append(part)
     return out
 
-studios_of = {w: split_studio(works[w]['studio']) for w in works}
-studio_works = defaultdict(list)
+# 制作会社の統合（content/制作会社の統合.csv：元の表記 → 統合先。連鎖もたどる）
+S_MERGE, S_KIND = {}, {}
+if os.path.exists(D('content', '制作会社の統合.csv')):
+    with open(D('content', '制作会社の統合.csv'), encoding='utf-8-sig', newline='') as f:
+        for r in csv.DictReader(f):
+            if r.get('元の表記') and r.get('統合先'):
+                S_MERGE[r['元の表記'].strip()] = r['統合先'].strip()
+                S_KIND[r['元の表記'].strip()] = (r.get('種類') or '').strip()
+
+def canon(s):
+    seen = set()
+    while s in S_MERGE and s not in seen:
+        seen.add(s); s = S_MERGE[s]
+    return s
+
+studios_of = {w: split_studio(works[w]['studio']) for w in works}   # 記事の表記
+studio_works = defaultdict(list)                                     # 統合先 → 番組
+studio_names = defaultdict(lambda: defaultdict(set))                 # 統合先 → 番組 → 当時の表記（表記ゆれ以外）
+studio_alias = defaultdict(set)                                      # 統合先 → 旧名・別の表記
 for w in order:
     for s in studios_of[w]:
-        studio_works[s].append(w)
+        c = canon(s)
+        if w not in studio_works[c]:
+            studio_works[c].append(w)
+        if s != c:
+            studio_alias[c].add(s)
+            if S_KIND.get(s) != '表記ゆれ':
+                studio_names[c][w].add(s)
 
 COMPANY_KUBUN = {'制作会社・製作', '宣伝・配給・放送', '制作協力（参考）'}
 staff = defaultdict(list)                    # work → [(role_raw, role, kubun, person, credited_as, note)]
@@ -275,7 +298,8 @@ def plink(p, r='{R}', cred=None):
     return f'<a href="{r}{P_URL[p]}">{label}</a>' if p in P_URL else label
 
 def slink(s, r='{R}'):
-    return f'<a href="{r}{S_URL[s]}">{esc(s)}</a>' if s in S_URL else esc(s)
+    c = canon(s)
+    return f'<a href="{r}{S_URL[c]}">{esc(s)}</a>' if c in S_URL else esc(s)
 
 def wlink(w, r='{R}'):
     return f'<a href="{r}w/{w}.html">{esc(works[w]["title"])}</a>'
@@ -540,9 +564,17 @@ page('staff/index.html', 'スタッフ別',
 
 # 制作会社
 for s, ws in studio_works.items():
-    srow = lambda ww: [[str(year_of(w) or ''), wlink(w) + marks(w), '、'.join(plink(p) for p in roles_of(w, {'総監督', '監督'}))] for w in ww]
+    def srow(ww, s=s):
+        out = []
+        for w in ww:
+            old = studio_names[s].get(w)
+            out.append([str(year_of(w) or ''), wlink(w) + marks(w) + (f'<span class="cred">（{esc("・".join(sorted(old)))}）</span>' if old else ''),
+                        '、'.join(plink(p) for p in roles_of(w, {'総監督', '監督'}))])
+        return out
+    al = sorted(studio_alias.get(s, ()), key=lambda x: (S_KIND.get(x) == '表記ゆれ', x))
+    alias_p = ('<p>旧名・別の表記：' + '、'.join(esc(x) for x in al) + '</p>') if al else ''
     ys = [year_of(w) for w in ws if year_of(w)]
-    page(S_URL[s], s, f'<h1>{esc(s)}</h1><p>{len(ws)}番組' + (f'（{min(ys)}年～{max(ys)}年）' if ys else '') + '</p>' +
+    page(S_URL[s], s, f'<h1>{esc(s)}</h1><p>{len(ws)}番組' + (f'（{min(ys)}年～{max(ys)}年）' if ys else '') + '</p>' + alias_p +
          by_decade(ws, srow, ['年', '番組', '監督']), crumbs=[('studios/index.html', '制作会社別'), (None, s)], current='studios/index.html')
 dcount = defaultdict(Counter)        # 年代 → 制作会社 → その年代の番組数
 for s_, ws in studio_works.items():
