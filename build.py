@@ -263,7 +263,7 @@ FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDMincho&family=BIZ+UDPMincho:wght@400;700&family=BIZ+UDPGothic:wght@400;700&display=swap">')
 
-def page(path, title, body, crumbs=(), current=None, desc='', script=''):
+def page(path, title, body, crumbs=(), current=None, desc='', script='', head=''):
     depth = path.count('/')
     r = '../' * depth
     site = CONF['サイト名']
@@ -278,7 +278,7 @@ def page(path, title, body, crumbs=(), current=None, desc='', script=''):
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{full}</title>{f'<meta name="description" content="{esc(desc)}">' if desc else ''}
-{FONTS}<link rel="stylesheet" href="{r}style.css"></head>
+{FONTS}<link rel="stylesheet" href="{r}style.css">{head}</head>
 <body><div class="wrap">
 <header class="site"><a class="sitename" href="{r}index.html">{esc(site)}</a></header>
 <nav class="menu" aria-label="サイト内"><ul>{nav}</ul></nav>
@@ -622,6 +622,30 @@ q.addEventListener('input',run);})();
 </script>'''
 page('search.html', '番組名で探す', '<h1>番組名で探す</h1><p><input id="q" type="search" placeholder="番組名の一部（ひらがな・カタカナどちらでも）" autofocus></p><ul id="res" class="names"></ul>',
      crumbs=[(None, '番組名で探す')], current='search.html', script=SEARCH_JS)
+
+# 記事リンクの追加（筆者用。メニューには出さず、検索にも載せない）
+shutil.copy(D('static', 'add.js'), OUT)
+page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1>
+<div class="add">
+<div id="drop" class="drop"><p>記事を保存したHTMLをここに落とす　または　<label class="btn">ファイルを選ぶ<input id="file" type="file" accept=".html,.htm,.mhtml" hidden></label></p><p class="fname" id="fname"></p></div>
+<label>引用文<textarea id="f-quote" rows="4"></textarea></label>
+<label>番組<input id="q" type="search" placeholder="違うときは番組名で探す"><select id="f-work"></select></label>
+<div class="grid">
+<label>種別<select id="f-kind"><option>評論</option><option>批評</option><option>インタビュー</option><option>対談</option><option>記事</option><option>コラム</option><option selected>感想</option><option>資料</option></select></label>
+<label>日付<input id="f-date" placeholder="2006-09-30"></label>
+<label class="w2">題名<input id="f-title"></label>
+<label>筆者<input id="f-author"></label>
+<label>媒体<input id="f-site"></label>
+<label class="w2">URL<input id="f-url"></label>
+</div>
+<label>links.csv に足す1行<textarea id="line" rows="3" readonly></textarea></label>
+<p><button id="copy" class="btn">この1行をコピー</button>　<a href="https://github.com/nzanke/anime-world/edit/main/content/links.csv">GitHubで links.csv を開く</a>　<span id="chk" class="warn"></span></p>
+<details class="gh"><summary>GitHubに直接追加する（任意）</summary>
+<p>GitHub の「Fine-grained personal access token」（リポジトリ anime-world だけ・Contents の Read and write）を入れると、ボタン1つで links.csv に追加して公開します。トークンはこのブラウザにだけ保存されます。</p>
+<label>トークン<input id="tok" type="password" autocomplete="off"></label>
+<p><button id="push" class="btn">追加して公開</button></p></details>
+<p id="msg" class="msg"></p>
+</div>''', crumbs=[(None, '記事リンクの追加')], script='<script src="add.js"></script>', head='<meta name="robots" content="noindex">')
 
 # このサイトについて
 about = open(D('content', 'about.md'), encoding='utf-8-sig').read() if os.path.exists(D('content', 'about.md')) else ''

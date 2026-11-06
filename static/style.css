@@ -137,3 +137,19 @@ details.fold>summary>h3{margin-top:1rem}
 
 /* 評論・記事の種別の見出しは本文と同じ大きさ */
 h3.kind{font-size:1em}
+
+/* 記事リンクの追加 */
+.add label{display:block;font-family:var(--gothic);font-size:.85rem;color:var(--ai);font-weight:700;margin:.9rem 0 0}
+.add input:not([type=file]),.add select,.add textarea{display:block;width:100%;margin-top:.25rem;font:400 .95rem/1.5 var(--gothic);color:var(--ink);padding:.45rem .55rem;border:1px solid #b9bcb6;border-radius:4px;background:#fff}
+.add textarea#line{font:400 .85rem/1.5 ui-monospace,Menlo,Consolas,monospace;background:var(--pale)}
+.add .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1rem}
+.add .grid .w2{grid-column:1/-1}
+@media (max-width:540px){.add .grid{grid-template-columns:1fr}}
+.drop{border:2px dashed #b9bcb6;border-radius:6px;padding:1.2rem;text-align:center;font-family:var(--gothic);color:var(--sub)}
+.drop.over{border-color:var(--ai);background:var(--ai-pale)}
+.drop p{margin:.2rem 0}.fname{color:var(--ai);font-weight:700}
+.btn{display:inline-block;font:700 .9rem var(--gothic);padding:.45rem 1rem;border:0;border-radius:4px;background:var(--ai);color:#fff;cursor:pointer}
+.add .warn,.msg{font-family:var(--gothic);font-size:.85rem;color:var(--beni)}
+details.gh{margin-top:1.4rem;border-top:1px solid var(--line);padding-top:.6rem;font-family:var(--gothic);font-size:.9rem}
+details.gh summary{cursor:pointer;color:var(--ai);font-weight:700}
+.drop label.btn{display:inline-block;margin:0 0 0 .4rem;color:#fff;font-size:.9rem}
