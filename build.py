@@ -19,7 +19,7 @@ warnings = []
 
 # ---------------------------------------------------------------- 設定
 def read_conf():
-    conf = {'サイト名': 'アニメ評論資料室', '説明': '', '筆者': ''}
+    conf = {'サイト名': 'アニメレビュー保管庫', '説明': '', '筆者': ''}
     if os.path.exists(D('content', 'site.txt')):
         for line in open(D('content', 'site.txt'), encoding='utf-8-sig'):
             if ':' in line and not line.startswith('#'):
