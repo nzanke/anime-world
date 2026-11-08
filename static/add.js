@@ -1,4 +1,4 @@
-// 記事リンクの追加：保存したHTMLと引用文から links.csv の1行を作る（任意で GitHub に直接追加）
+// 記事リンクの追加：保存したHTMLから links.csv の1行を作る（任意で GitHub に直接追加）
 (function(){
 var $=function(id){return document.getElementById(id)};
 var REPO='nzanke/anime-world', PATH='content/links.csv';
@@ -30,9 +30,15 @@ function readFile(f){
     var raw;try{raw=new TextDecoder('utf-8',{fatal:true}).decode(buf)}catch(e){try{raw=new TextDecoder(cs).decode(buf)}catch(e2){raw=new TextDecoder('utf-8').decode(buf)}}
     var r=parse(raw);
     $('f-url').value=r.url;$('f-title').value=r.title;$('f-author').value=r.author;$('f-site').value=r.site;$('f-date').value=r.date;
+    $('f-kind').value=kindOf(r.url);
     $('fname').textContent=f.name;guess();out()};
   fr.readAsArrayBuffer(f);
 }
+function kindOf(u){u=(u||'').toLowerCase();
+  if(/note\.com|hatena|ameblo|seesaa|sblo\.jp|fc2\.com|livedoor\.(jp|blog)|blogspot|wordpress|cocolog|exblog|goo\.ne\.jp\/|jugem|teacup|yaplog|muragon|blog/.test(u))return 'ブログ';
+  if(/natalie\.mu|animeanime|mantan-web|oricon|famitsu|4gamer|itmedia|gigazine|webnewtype|animatetimes|dengekionline|realsound|cinematoday|eiga\.com|febri|ddnavi|bunshun|gendai|toyokeizai|news\.|yahoo|livedoor\.com|excite|anime\.eiga|akiba-souken|animage|newtype/.test(u))return 'ネットメディア';
+  if(/wiki/.test(u))return 'ウェブサイト';
+  return 'その他'}
 function guess(){
   if(!titles.length)return;var t=norm($('f-title').value+' '+$('q').value);if(!t)return;
   var c=titles.filter(function(x){return x[5].length>1&&t.indexOf(x[5])>=0}).sort(function(a,b){return b[5].length-a[5].length}).slice(0,8);
@@ -43,9 +49,17 @@ function search(){var k=norm($('q').value);if(!k){guess();return}
 function setCands(c){var s=$('f-work');s.innerHTML=c.length?c.map(function(x){return '<option value="'+x[0]+'">'+x[1].replace(/</g,'&lt;')+'（'+x[2]+'）</option>'}).join(''):'<option value="">（番組名で探してください）</option>';out()}
 function q(v){v=(v||'').trim();return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 function line(){var w=$('f-work').value;
-  return [w,w&&byId[w]?byId[w][1]:'',$('f-kind').value,$('f-title').value,$('f-author').value,$('f-site').value,$('f-date').value,$('f-url').value,$('f-quote').value.replace(/\s*\n\s*/g,'')].map(q).join(',')}
-function out(){$('line').value=line();$('chk').textContent=$('f-work').value?'':'番組を選んでください'}
-['f-url','f-title','f-author','f-site','f-date','f-quote','f-kind','f-work'].forEach(function(id){$(id).addEventListener('input',out);$(id).addEventListener('change',out)});
+  return [w,w&&byId[w]?byId[w][1]:'',$('f-kind').value,$('f-title').value,$('f-author').value,$('f-site').value,$('f-date').value,$('f-url').value,$('f-scope').value?$('f-epno').value.replace(/^[#＃]\s*/,''):'',$('f-scope').value?$('f-epsub').value:''].map(q).join(',')}
+function out(){$('line').value=line();$('chk').textContent=!$('f-work').value?'番組を選んでください':($('f-scope').value&&!$('f-epno').value?'話数を入れてください':'')}
+var epFor=null,epList=[];
+function loadEps(){var w=$('f-work').value,on=!!$('f-scope').value;$('ep-wrap').hidden=!on;
+  if(!on||!w||epFor===w){out();return}epFor=w;$('f-ep').innerHTML='<option value="">読み込み中…</option>';
+  fetch('eps/'+w+'.json').then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
+    $('f-ep').innerHTML='<option value="">（選ぶと下の欄に入ります）</option>'+j.map(function(e,i){return '<option value="'+i+'">'+('#'+e[0]+(e[1]?'「'+e[1]+'」':'')).replace(/</g,'&lt;')+'</option>'}).join('');epList=j;out()})
+  .catch(function(){$('f-ep').innerHTML='<option value="">（この番組には各話リストがありません）</option>';out()})}
+$('f-scope').addEventListener('change',loadEps);$('f-work').addEventListener('change',loadEps);$('f-ep').addEventListener('change',function(){var e=epList[+this.value];if(this.value!==''&&e){$('f-epno').value=e[0];$('f-epsub').value=e[1]||''}out()});
+['f-epno','f-epsub'].forEach(function(id){$(id).addEventListener('input',out)});
+['f-url','f-title','f-author','f-site','f-date','f-kind','f-work'].forEach(function(id){$(id).addEventListener('input',out);$(id).addEventListener('change',out)});
 $('q').addEventListener('input',search);
 var dz=$('drop');
 dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over')});

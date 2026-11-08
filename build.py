@@ -6,8 +6,7 @@
   data/works.tsv ほか      基礎データ（anime-database の tools/hyoron/export.py で書き出したもの）
   content/site.txt         サイト名・説明など
   content/about.md         「このサイトについて」の本文
-  content/reviews/*.md     自分の評論（1本1ファイル。名前が _ で始まるファイルは読まない）
-  content/links.csv        他人の評論・記事のリンク
+  content/links.csv        関連記事のリンク（評論・インタビュー・記事。自分の評論も含む）
 """
 import csv, gzip, hashlib, html, json, os, re, shutil, sys
 from collections import defaultdict, Counter
@@ -144,19 +143,7 @@ def slug(prefix, name):
 P_URL = {p: f'p/{slug("", p)}.html' for p in people}
 S_URL = {s: f's/{slug("", s)}.html' for s in studio_works}
 
-# ---------------------------------------------------------------- 評論・リンク
-def parse_review(path):
-    text = open(path, encoding='utf-8-sig').read().replace('\r\n', '\n')
-    meta, body = {}, text
-    m = re.match(r'---\n(.*?)\n---\n?(.*)', text, re.S)
-    if m:
-        for line in m.group(1).splitlines():
-            if ':' in line:
-                k, v = line.split(':', 1)
-                meta[k.strip()] = v.strip()
-        body = m.group(2)
-    return meta, body
-
+# ---------------------------------------------------------------- 関連記事
 def find_work(wid, title, where):
     if wid and wid in works:
         return wid
@@ -168,25 +155,6 @@ def find_work(wid, title, where):
         return cands[0]
     warnings.append(f'{where}: 番組名「{title}」' + ('が見つかりません' if not cands else f'は候補が複数あります（{"・".join(cands)}）。番組IDを書いてください'))
     return None
-
-reviews = defaultdict(list)       # work → [review]
-all_reviews = []
-rdir = D('content', 'reviews')
-for fn in sorted(os.listdir(rdir)) if os.path.isdir(rdir) else []:
-    if not fn.endswith('.md') or fn.startswith('_'):
-        continue
-    meta, body = parse_review(os.path.join(rdir, fn))
-    w = find_work(meta.get('番組ID', meta.get('work', '')), meta.get('番組', ''), f'reviews/{fn}')
-    if not w:
-        continue
-    rv = {'work': w, 'title': meta.get('題名', meta.get('title', '')) or works[w]['title'],
-          'date': meta.get('日付', meta.get('date', '')), 'body': body, 'file': fn,
-          'note': meta.get('初出', '')}
-    rv['anchor'] = 'r-' + re.sub(r'\W', '', os.path.splitext(fn)[0])[:40]
-    reviews[w].append(rv)
-    all_reviews.append(rv)
-for w in reviews:
-    reviews[w].sort(key=lambda r: r['date'])
 
 links = defaultdict(list)
 all_links = []
@@ -203,9 +171,10 @@ if os.path.exists(lpath):
             r['work'] = w
             links[w].append(r)
             all_links.append(r)
-KIND_ORDER = ['評論', '批評', 'インタビュー', '対談', '記事', 'コラム', '感想', '資料']
+KIND_ORDER = ['ブログ', 'ネットメディア', '雑誌', '書籍', '新聞', 'ウェブサイト', 'その他']   # 媒体の種類
+kind = lambda r: r.get('分類') or r.get('種別') or 'その他'
 for w in links:
-    links[w].sort(key=lambda r: (KIND_ORDER.index(r.get('種別')) if r.get('種別') in KIND_ORDER else 99, r.get('日付', '')))
+    links[w].sort(key=lambda r: (KIND_ORDER.index(kind(r)) if kind(r) in KIND_ORDER else 99, r.get('日付', '')))
 
 # ---------------------------------------------------------------- 本文の書式（簡単なマークダウン）
 def inline(s, r):
@@ -256,7 +225,7 @@ def render_body(text, r, hbase=4):
     return '\n'.join(out)
 
 # ---------------------------------------------------------------- ページの枠
-NAV = [('index.html', 'トップ'), ('reviews.html', '評論'), ('links.html', '記事・評論リンク'),
+NAV = [('index.html', 'トップ'), ('links.html', '関連記事'),
        ('years/index.html', '年代別'), ('staff/index.html', 'スタッフ別'), ('studios/index.html', '制作会社別'),
        ('search.html', '番組名で探す'), ('about.html', 'このサイトについて')]
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
@@ -285,7 +254,7 @@ def page(path, title, body, crumbs=(), current=None, desc='', script='', head=''
 <main>{cr}
 {body.replace('{R}', r)}
 </main>
-<footer class="site"><p>番組・スタッフ・各話の基礎データは日本語版ウィキペディアの各記事{src}をもとに加工したもので、<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja">CC BY-SA 4.0</a> で提供します（<a href="{r}about.html#data">出典と加工について</a>）。評論の著作権は各筆者に属します。</p></footer>
+<footer class="site"><p>番組・スタッフ・各話の基礎データは日本語版ウィキペディアの各記事{src}をもとに加工したもので、<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja">CC BY-SA 4.0</a> で提供します（<a href="{r}about.html#data">出典と加工について</a>）。</p></footer>
 </div>{script}</body></html>
 '''
     dest = os.path.join(OUT, path)
@@ -319,10 +288,8 @@ def period(w):
 
 def marks(w):
     m = ''
-    if reviews.get(w):
-        m += '<span class="mk" title="評論あり">評</span>'
     if links.get(w):
-        m += f'<span class="mk2" title="記事・評論リンク">資{len(links[w])}</span>'
+        m += f'<span class="mk2" title="関連記事">記事{len(links[w])}</span>'
     return m
 
 def roles_of(w, names):
@@ -332,14 +299,32 @@ def roles_of(w, names):
             seen.append(r['person'])
     return seen
 
-def link_line(l, kind=False):
+def ep_names_of(w):
+    """番組の各話の表示名と並び順 → [(話数の表示, サブタイトル)]"""
+    eps = episodes.get(w, [])
+    segs = len({e['segment'] for e in eps}) > 1
+    return [(((e['segment'] + ' ') if segs and e['segment'] else '') + e['episode'], e['subtitle']) for e in eps]
+
+def ep_no(l):
+    return (l.get('話数') or '').lstrip('#＃ ').strip()
+
+def ep_index(w, l):
+    names = [n for n, _ in ep_names_of(w)]
+    return names.index(ep_no(l)) if ep_no(l) in names else 99999
+
+def ep_label(w, l):
+    """#話数「サブタイトル」（サブタイトルが空なら各話リストから補う）"""
+    sub = l.get('サブタイトル') or dict(ep_names_of(w)).get(ep_no(l), '')
+    return '#' + esc(ep_no(l)) + (f'「{esc(sub)}」' if sub else '')
+
+def link_line(l, kind_label=False):
     """日付／題名／筆者／「媒体」（ないものは省く）"""
     t = esc(l.get('題名') or l.get('URL'))
     if l.get('URL'):
         t = f'<a href="{esc(l["URL"])}">{t}</a>'
     parts = [fmt_date(l.get('日付', '')), t, esc(l.get('筆者', '')), f'「{esc(l["媒体"])}」' if l.get('媒体') else '']
-    if kind and l.get('種別'):
-        parts.append(f'（{esc(l["種別"])}）')
+    if kind_label:
+        parts.append(f'（{"#" + esc(ep_no(l)) + "・" if l.get("話数") else ""}{esc(kind(l))}）')
     return '／'.join(x for x in parts if x)
 
 def table(head, rows, cls=''):
@@ -398,30 +383,23 @@ for w in order:
                            f'（<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja">CC BY-SA 4.0</a>）'))
     body = [f'<h1>{esc(wk["title"])}</h1>',
             '<table class="info">' + ''.join(f'<tr><th>{k}</th><td>{v}</td></tr>' for k, v in info) + '</table>']
-    # 自分の評論
-    body.append('<h2 id="hyoron">評論</h2>')
-    if reviews.get(w):
-        for rv in reviews[w]:
-            body.append(f'<article class="review" id="{rv["anchor"]}"><h3>{esc(rv["title"])}</h3>'
-                        f'<p class="meta">{fmt_date(rv["date"])}{"　" + esc(rv["note"]) if rv["note"] else ""}</p>'
-                        f'<div class="text">{render_body(rv["body"], "{R}")}</div></article>')
-    else:
-        body.append('<p class="none">まだありません。</p>')
-    # 他人の評論・記事
-    body.append('<h2 id="links">評論・記事</h2>')
-    if links.get(w):
+    # 関連記事（番組全体）と関連記事（話数単位：あるときだけ）
+    def link_block(ls, ep=False):
         items, cur = [], None
-        for l in links[w]:
-            k = l.get('種別') or 'その他'
+        for l in ls:
+            k = kind(l)
             if k != cur:
                 if items: items.append('</ul>')
                 items.append(f'<h3 class="kind">{esc(k)}</h3><ul class="links">'); cur = k
-            ex = f'<blockquote>{esc(l["抜粋・メモ"])}</blockquote>' if l.get('抜粋・メモ') else ''
-            items.append(f'<li>{link_line(l)}{ex}</li>')
+            items.append(f'<li>{(ep_label(w, l) + "／") if ep else ""}{link_line(l)}</li>')
         items.append('</ul>')
-        body.append(''.join(items))
-    else:
-        body.append('<p class="none">まだありません。</p>')
+        return ''.join(items)
+    whole = [l for l in links.get(w, []) if not l.get('話数')]
+    per_ep = sorted([l for l in links.get(w, []) if l.get('話数')], key=lambda l: (KIND_ORDER.index(kind(l)) if kind(l) in KIND_ORDER else 99, ep_index(w, l), l.get('日付', '')))
+    body.append('<h2 id="links">関連記事</h2>')
+    body.append(link_block(whole) if whole else '<p class="none">まだありません。</p>')
+    if per_ep:
+        body.append('<h2 id="links-ep">関連記事（話数単位）</h2>' + link_block(per_ep, True))
     # スタッフ
     if staff.get(w):
         grp = {}
@@ -458,7 +436,7 @@ for w in order:
                  f'<h1>{esc(wk["title"])}　各話スタッフ</h1><p><a href="{w}.html">番組のページに戻る</a></p>' + table(head, ep_rows('{R}'), 'eps'),
                  crumbs=crumbs[:-1] + [(f'w/{w}.html', wk['title']), (None, '各話スタッフ')])
     page(f'w/{w}.html', wk['title'], '\n'.join(body), crumbs=crumbs,
-         desc=f'{wk["title"]}（{period(w)}）の評論・記事とスタッフ')
+         desc=f'{wk["title"]}（{period(w)}）の関連記事とスタッフ')
 
 # 年代別
 years = defaultdict(list)
@@ -588,50 +566,47 @@ for d in sorted(dcount, key=lambda d: (d == '放送年不明', d)):
     parts.append(fold(d, '<ul class="names">' + ''.join(f'<li>{slink(x)}<span>{dcount[d][x]}</span></li>' for x in ss) + '</ul>', len(ss), 'd' + d[:4], '社', limit=60))
 page('studios/index.html', '制作会社別', '\n'.join(parts), crumbs=[(None, '制作会社別')], current='studios/index.html')
 
-# 評論の一覧・リンク集
-rows = sorted(all_reviews, key=lambda r: r['date'], reverse=True)
-parts = ['<h1>評論</h1>']
-if rows:
-    parts.append('<ul class="rlist">' + ''.join(
-        f'<li><span class="d">{fmt_date(r["date"])}</span><a href="w/{r["work"]}.html#{r["anchor"]}">{esc(r["title"])}</a>'
-        f'<span class="w">{esc(works[r["work"]]["title"])}</span></li>' for r in rows) + '</ul>')
-else:
-    parts.append('<p class="none">まだありません。</p>')
-page('reviews.html', '評論', '\n'.join(parts), crumbs=[(None, '評論')], current='reviews.html')
-
+# 関連記事の一覧
 lw = sorted({l['work'] for l in all_links}, key=lambda w: (works[w]['start_date'] or '9999'))
-parts = [f'<h1>記事・評論リンク</h1><p>{len(all_links)}件。番組の放送順です。</p>']
+parts = [f'<h1>関連記事</h1><p>{len(all_links)}件。番組の放送順です。</p>']
 for w in lw:
     parts.append(f'<h2>{wlink(w)}<span class="sub">{esc(str(year_of(w) or ""))}</span></h2><ul class="links">' + ''.join(
         f'<li>{link_line(l, True)}</li>' for l in links[w]) + '</ul>')
 if not lw:
     parts.append('<p class="none">まだありません。</p>')
-page('links.html', '記事・評論リンク', '\n'.join(parts), crumbs=[(None, '記事・評論リンク')], current='links.html')
+page('links.html', '関連記事', '\n'.join(parts), crumbs=[(None, '関連記事')], current='links.html')
 
 # 番組名で探す
 with open(os.path.join(OUT, 'titles.json'), 'w', encoding='utf-8') as f:
-    json.dump([[w, works[w]['title'], year_of(w) or '', 1 if reviews.get(w) else 0] for w in order], f, ensure_ascii=False, separators=(',', ':'))
+    json.dump([[w, works[w]['title'], year_of(w) or '', 0] for w in order], f, ensure_ascii=False, separators=(',', ':'))
 SEARCH_JS = '''<script>
 (function(){var q=document.getElementById('q'),o=document.getElementById('res'),d=null;
 function norm(s){return s.normalize('NFKC').toLowerCase().replace(/[\\s・!！?？:：\\-－〜～☆★♪]/g,'').replace(/[ァ-ン]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-96)})}
 function run(){if(!d)return;var k=norm(q.value);if(!k){o.innerHTML='';return}
 var h=[];for(var i=0;i<d.length&&h.length<200;i++){if(d[i][4].indexOf(k)>=0)h.push(d[i])}
-o.innerHTML=h.length?h.map(function(x){return '<li><a href="w/'+x[0]+'.html">'+x[1].replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})+'</a><span>'+x[2]+(x[3]?'　<b class="mk">評</b>':'')+'</span></li>'}).join(''):'<li>見つかりません</li>'}
+o.innerHTML=h.length?h.map(function(x){return '<li><a href="w/'+x[0]+'.html">'+x[1].replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})+'</a><span>'+x[2]+'</span></li>'}).join(''):'<li>見つかりません</li>'}
 fetch('titles.json').then(function(r){return r.json()}).then(function(j){d=j;j.forEach(function(x){x[4]=norm(x[1])});run()});
 q.addEventListener('input',run);})();
 </script>'''
 page('search.html', '番組名で探す', '<h1>番組名で探す</h1><p><input id="q" type="search" placeholder="番組名の一部（ひらがな・カタカナどちらでも）" autofocus></p><ul id="res" class="names"></ul>',
      crumbs=[(None, '番組名で探す')], current='search.html', script=SEARCH_JS)
 
+# 追加ページ用の各話の一覧（eps/<番組ID>.json）
+os.makedirs(os.path.join(OUT, 'eps'), exist_ok=True)
+for w in episodes:
+    with open(os.path.join(OUT, 'eps', f'{w}.json'), 'w', encoding='utf-8') as f:
+        json.dump(ep_names_of(w), f, ensure_ascii=False, separators=(',', ':'))
+
 # 記事リンクの追加（筆者用。メニューには出さず、検索にも載せない）
 shutil.copy(D('static', 'add.js'), OUT)
 page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1>
 <div class="add">
 <div id="drop" class="drop"><p>記事を保存したHTMLをここに落とす　または　<label class="btn">ファイルを選ぶ<input id="file" type="file" accept=".html,.htm,.mhtml" hidden></label></p><p class="fname" id="fname"></p></div>
-<label>引用文<textarea id="f-quote" rows="4"></textarea></label>
 <label>番組<input id="q" type="search" placeholder="違うときは番組名で探す"><select id="f-work"></select></label>
+<label>記事の対象<select id="f-scope"><option value="">番組全体（関連記事）</option><option value="ep">話数単位（関連記事（話数単位））</option></select></label>
+<div id="ep-wrap" class="grid" hidden><label class="w2">各話リストから選ぶ<select id="f-ep"></select></label><label>話数（数字）<input id="f-epno" placeholder="1"></label><label>サブタイトル<input id="f-epsub"></label></div>
 <div class="grid">
-<label>種別<select id="f-kind"><option>評論</option><option>批評</option><option>インタビュー</option><option>対談</option><option>記事</option><option>コラム</option><option selected>感想</option><option>資料</option></select></label>
+<label>分類（媒体）<select id="f-kind"><option>ブログ</option><option>ネットメディア</option><option>雑誌</option><option>書籍</option><option>新聞</option><option>ウェブサイト</option><option>その他</option></select></label>
 <label>日付<input id="f-date" placeholder="2006-09-30"></label>
 <label class="w2">題名<input id="f-title"></label>
 <label>筆者<input id="f-author"></label>
@@ -653,14 +628,8 @@ page('about.html', 'このサイトについて', '<h1>このサイトについ�
      crumbs=[(None, 'このサイトについて')], current='about.html')
 
 # トップ
-news = sorted([(r['date'], 'r', r) for r in all_reviews] + [(l.get('日付', ''), 'l', l) for l in all_links], key=lambda x: x[0], reverse=True)[:15]
-nl = []
-for d, t, x in news:
-    if t == 'r':
-        nl.append(f'<li><span class="d">{fmt_date(d)}</span><b class="mk">評</b><a href="w/{x["work"]}.html#{x["anchor"]}">{esc(x["title"])}</a><span class="w">{esc(works[x["work"]]["title"])}</span></li>')
-    else:
-        nl.append(f'<li><span class="d">{fmt_date(d)}</span><b class="mk2">資</b><a href="w/{x["work"]}.html#links">{esc(x.get("題名", ""))}</a><span class="w">{esc(works[x["work"]]["title"])}</span></li>')
-rw = sorted(reviews, key=lambda w: works[w]['start_date'] or '9999')
+news = sorted(all_links, key=lambda l: l.get('日付', ''), reverse=True)[:15]
+nl = [f'<li><span class="d">{fmt_date(x.get("日付", ""))}</span><a href="w/{x["work"]}.html#links">{esc(x.get("題名", ""))}</a><span class="w">{esc(works[x["work"]]["title"])}</span></li>' for x in news]
 top = [f'<h1 class="top">{esc(CONF["サイト名"])}</h1>']
 if CONF.get('説明'):
     top.append(f'<p class="lead">{esc(CONF["説明"])}</p>')
@@ -669,13 +638,11 @@ top.append('<h2>入口</h2><ul class="menu-list">'
            f'<li><a href="staff/index.html">スタッフ別</a><span>{len(people)}人</span></li>'
            f'<li><a href="studios/index.html">制作会社別</a><span>{len(studio_works)}社</span></li>'
            '<li><a href="search.html">番組名で探す</a></li></ul>')
-top.append('<h2>新着</h2>' + (f'<ul class="rlist">{"".join(nl)}</ul>' if nl else '<p class="none">まだありません。</p>'))
-if rw:
-    top.append('<h2>評論のある番組</h2><ul class="names">' + ''.join(f'<li>{wlink(w, "")}<span>{year_of(w) or ""}</span></li>' for w in rw) + '</ul>')
+top.append('<h2>新着の関連記事</h2>' + (f'<ul class="rlist">{"".join(nl)}</ul>' if nl else '<p class="none">まだありません。</p>'))
 page('index.html', CONF['サイト名'], '\n'.join(top), current='index.html', desc=CONF.get('説明', ''))
 
 n = sum(len(fs) for _, _, fs in os.walk(OUT))
 size = sum(os.path.getsize(os.path.join(a, f)) for a, _, fs in os.walk(OUT) for f in fs)
-print(f'{n}ファイル　{size / 1e6:.1f}MB　番組{len(works)}・人{len(people)}・制作会社{len(studio_works)}・評論{len(all_reviews)}・リンク{len(all_links)}')
+print(f'{n}ファイル　{size / 1e6:.1f}MB　番組{len(works)}・人{len(people)}・制作会社{len(studio_works)}・関連記事{len(all_links)}')
 for m in warnings:
     print('注意:', m)

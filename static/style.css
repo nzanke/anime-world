@@ -112,7 +112,6 @@ blockquote p{text-indent:0;margin:0 0 .4em}
 ul.links{padding-left:1.2rem;margin:.4rem 0 1rem}
 ul.links li{margin:.5rem 0}
 ul.links a,ul.links a:visited{color:inherit}
-ul.links blockquote{font-size:1em;margin:.3rem 0}
 
 input[type=search]{width:100%;max-width:32rem;font-size:1rem;padding:.55rem .7rem;border:1px solid #b9bcb6;border-radius:4px}
 input[type=search]:focus{outline:2px solid var(--ai);outline-offset:1px}
@@ -153,3 +152,4 @@ h3.kind{font-size:1em}
 details.gh{margin-top:1.4rem;border-top:1px solid var(--line);padding-top:.6rem;font-family:var(--gothic);font-size:.9rem}
 details.gh summary{cursor:pointer;color:var(--ai);font-weight:700}
 .drop label.btn{display:inline-block;margin:0 0 0 .4rem;color:#fff;font-size:.9rem}
+
