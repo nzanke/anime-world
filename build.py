@@ -232,6 +232,10 @@ FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDMincho&family=BIZ+UDPMincho:wght@400;700&family=BIZ+UDPGothic:wght@400;700&display=swap">')
 
+# 書き換えたら古いものがブラウザに残らないよう、ファイルの中身から番号を付ける
+CSS_V = hashlib.sha1(open(D('static', 'style.css'), 'rb').read()).hexdigest()[:8]
+JS_V = hashlib.sha1(open(D('static', 'add.js'), 'rb').read()).hexdigest()[:8]
+
 def page(path, title, body, crumbs=(), current=None, desc='', script='', head=''):
     depth = path.count('/')
     r = '../' * depth
@@ -247,7 +251,7 @@ def page(path, title, body, crumbs=(), current=None, desc='', script='', head=''
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{full}</title>{f'<meta name="description" content="{esc(desc)}">' if desc else ''}
-{FONTS}<link rel="stylesheet" href="{r}style.css">{head}</head>
+{FONTS}<link rel="stylesheet" href="{r}style.css?v={CSS_V}">{head}</head>
 <body><div class="wrap">
 <header class="site"><a class="sitename" href="{r}index.html">{esc(site)}</a></header>
 <nav class="menu" aria-label="サイト内"><ul>{nav}</ul></nav>
@@ -634,7 +638,7 @@ page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1
 <label>トークン<input id="tok" type="password" autocomplete="off"></label>
 <p><button id="push" class="btn">追加して公開</button></p></details>
 <p id="msg" class="msg"></p>
-</div>''', crumbs=[(None, '記事リンクの追加')], script='<script src="add.js"></script>', head='<meta name="robots" content="noindex">')
+</div>''', crumbs=[(None, '記事リンクの追加')], script=f'<script src="add.js?v={JS_V}"></script>', head='<meta name="robots" content="noindex">')
 
 # このサイトについて
 about = open(D('content', 'about.md'), encoding='utf-8-sig').read() if os.path.exists(D('content', 'about.md')) else ''
