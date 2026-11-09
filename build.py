@@ -582,9 +582,8 @@ def type_mark(l):
 def feed_item(l):
     w = l['work']
     t = esc(l.get('題名') or l.get('URL'))
-    prog = esc(works[w]['title']) + (f' {ep_label(w, l)}' if l.get('話数') else '')
     head = f'<a class="t" href="{esc(l["URL"])}" title="{t}">{t}</a>' if l.get('URL') else f'<span class="t">{t}</span>'
-    return (f'<li>{type_mark(l)}<span class="tl">{head}<a class="w" href="w/{w}.html">{prog}</a></span>'
+    return (f'<li>{type_mark(l)}<span class="tl">{head}</span>'
             f'<a class="go" href="w/{w}.html#{"links-ep" if l.get("話数") else "links"}" title="{esc(works[w]["title"])}のページへ">元記事</a>'
             f'<span class="src">{esc(l.get("媒体") or kind(l))}</span><time>{esc(fmt_date(l.get("日付", ""))) or "—"}</time></li>')
 fl = sorted(all_links, key=lambda l: l.get('日付') or '0000', reverse=True)
