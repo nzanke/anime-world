@@ -642,7 +642,6 @@ page('about.html', 'このサイトについて', '<h1>このサイトについ�
 
 # トップ
 news = sorted(all_links, key=lambda l: l.get('日付', ''), reverse=True)[:15]
-nl = [f'<li><span class="d">{fmt_date(x.get("日付", ""))}</span><a href="w/{x["work"]}.html#links">{esc(x.get("題名", ""))}</a><span class="w">{esc(works[x["work"]]["title"])}</span></li>' for x in news]
 top = [f'<h1 class="top">{esc(CONF["サイト名"])}</h1>']
 if CONF.get('説明'):
     top.append(f'<p class="lead">{esc(CONF["説明"])}</p>')
@@ -651,7 +650,7 @@ top.append('<h2>入口</h2><ul class="menu-list">'
            f'<li><a href="staff/index.html">スタッフ別</a><span>{len(people)}人</span></li>'
            f'<li><a href="studios/index.html">制作会社別</a><span>{len(studio_works)}社</span></li>'
            '<li><a href="search.html">番組名で探す</a></li></ul>')
-top.append('<h2>新着の関連記事</h2>' + (f'<ul class="rlist">{"".join(nl)}</ul>' if nl else '<p class="none">まだありません。</p>'))
+top.append('<h2>新着記事</h2>' + (f'<ul class="feed">{"".join(feed_item(x) for x in news)}</ul><p class="more"><a href="links.html">最新記事をすべて見る</a></p>' if news else '<p class="none">まだありません。</p>'))
 page('index.html', CONF['サイト名'], '\n'.join(top), current='index.html', desc=CONF.get('説明', ''))
 
 n = sum(len(fs) for _, _, fs in os.walk(OUT))

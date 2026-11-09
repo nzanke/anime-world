@@ -210,3 +210,4 @@ ul.feed time{font-family:var(--gothic);font-size:.82rem;color:#8a8d88;font-varia
   ul.feed .src,ul.feed time{font-size:.68rem}
   ul.feed .ty{font-size:.6rem}
 }
+.more{font-family:var(--gothic);font-size:.82rem;text-align:right;margin:.5rem 0 0}
