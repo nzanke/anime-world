@@ -61,6 +61,7 @@ $('f-scope').addEventListener('change',loadEps);$('f-work').addEventListener('ch
 ['f-epno','f-epsub'].forEach(function(id){$(id).addEventListener('input',out)});
 ['f-url','f-title','f-author','f-site','f-date','f-kind','f-type','f-work'].forEach(function(id){$(id).addEventListener('input',out);$(id).addEventListener('change',out)});
 $('q').addEventListener('input',search);
+$('f-url').addEventListener('input',function(){$('f-kind').value=kindOf(this.value);out()});
 var dz=$('drop');
 dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over')});
 dz.addEventListener('dragleave',function(){dz.classList.remove('over')});

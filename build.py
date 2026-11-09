@@ -617,7 +617,8 @@ for w in episodes:
 shutil.copy(D('static', 'add.js'), OUT)
 page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1>
 <div class="add">
-<div id="drop" class="drop"><p>記事を保存したHTMLをここに落とす　または　<label class="btn">ファイルを選ぶ<input id="file" type="file" accept=".html,.htm,.mhtml" hidden></label></p><p class="fname" id="fname"></p></div>
+<label>記事のURL<input id="f-url" type="url" placeholder="https://…" autofocus></label>
+<p class="hint">URLだけで登録できます。題名・筆者・媒体・日付は空のままでよく、公開のときにページから自動で入ります（下の欄に書いたものが優先）。</p>
 <label>番組<input id="q" type="search" placeholder="違うときは番組名で探す"><select id="f-work"></select></label>
 <label>記事の対象<select id="f-scope"><option value="">番組全体（関連記事）</option><option value="ep">話数単位（関連記事（話数単位））</option></select></label>
 <div id="ep-wrap" class="grid" hidden><label class="w2">各話リストから選ぶ<select id="f-ep"></select></label><label>話数（数字）<input id="f-epno" placeholder="1"></label><label>サブタイトル<input id="f-epsub"></label></div>
@@ -625,11 +626,11 @@ page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1
 <label>種類<select id="f-type"><option>評論</option><option selected>感想</option><option>インタビュー</option><option>資料</option></select></label>
 <label>分類（媒体）<select id="f-kind"><option>ブログ</option><option>ネットメディア</option><option>雑誌</option><option>書籍</option><option>新聞</option><option>ウェブサイト</option><option>その他</option></select></label>
 <label>日付<input id="f-date" placeholder="2006-09-30"></label>
-<label class="w2">題名<input id="f-title"></label>
+<label class="w2">題名（空なら自動）<input id="f-title"></label>
 <label>筆者<input id="f-author"></label>
 <label>媒体<input id="f-site"></label>
-<label class="w2">URL<input id="f-url"></label>
 </div>
+<details class="gh"><summary>URLで読めないサイトは、保存したHTMLから読み取る</summary><div id="drop" class="drop"><p>保存したHTMLをここに落とす　または　<label class="btn">ファイルを選ぶ<input id="file" type="file" accept=".html,.htm,.mhtml" hidden></label></p><p class="fname" id="fname"></p></div></details>
 <label>links.csv に足す1行<textarea id="line" rows="3" readonly></textarea></label>
 <p><button id="copy" class="btn">この1行をコピー</button>　<a href="https://github.com/nzanke/anime-world/edit/main/content/links.csv">GitHubで links.csv を開く</a>　<span id="chk" class="warn"></span></p>
 <details class="gh"><summary>GitHubに直接追加する（任意）</summary>
