@@ -71,11 +71,14 @@ $('copy').addEventListener('click',function(){navigator.clipboard.writeText($('l
 
 // GitHub に直接追加（任意）
 try{$('tok').value=localStorage.getItem('gh-token')||''}catch(e){}
-$('tok').addEventListener('change',function(){try{localStorage.setItem('gh-token',this.value.trim())}catch(e){}});
+function tokUI(){var has=!!$('tok').value.trim();$('tokbox').hidden=has;$('tokedit').parentNode.hidden=!has}
+$('tok').addEventListener('change',function(){try{localStorage.setItem('gh-token',this.value.trim())}catch(e){}tokUI()});
+$('tokedit').addEventListener('click',function(e){e.preventDefault();$('tokbox').hidden=false;this.parentNode.hidden=true;$('tok').focus()});
+tokUI();
 function b64dec(s){var b=atob(s.replace(/\n/g,'')),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new TextDecoder().decode(a)}
 function b64enc(s){var a=new TextEncoder().encode(s),b='';for(var i=0;i<a.length;i++)b+=String.fromCharCode(a[i]);return btoa(b)}
 $('push').addEventListener('click',function(){
-  var tok=$('tok').value.trim(),L=$('line').value;if(!tok){$('msg').textContent='トークンを入れてください';return}
+  var tok=$('tok').value.trim(),L=$('line').value;if(!tok){$('tokbox').hidden=false;$('msg').textContent='トークンを入れてください';return}
   if(!$('f-work').value){$('msg').textContent='番組を選んでください';return}
   var api='https://api.github.com/repos/'+REPO+'/contents/'+PATH, H={'Authorization':'Bearer '+tok,'Accept':'application/vnd.github+json'};
   $('msg').textContent='追加しています…';

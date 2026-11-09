@@ -219,3 +219,7 @@ ul.feed .go:visited{color:var(--ai)}
 ul.feed .go:visited:hover{color:#fff}
 @media (max-width:640px){ul.feed li{grid-template-columns:auto minmax(0,1fr) auto 5.2rem 5.4rem}ul.feed .go{font-size:.6rem;padding:0 .3rem}}
 .add .hint{font-family:var(--gothic);font-size:.78rem;color:var(--sub);margin:.3rem 0 0}
+.btn.big{font-size:1rem;padding:.6rem 1.6rem}.go-row{margin:1.4rem 0 .4rem}
+.tokbox{border:1px dashed #b9bcb6;border-radius:6px;padding:.4rem 1rem .8rem;margin:.6rem 0;font-family:var(--gothic);font-size:.85rem}
+.tokchange{font-family:var(--gothic);font-size:.75rem;text-align:right;margin:.2rem 0}
+.tokchange a{color:var(--sub)}

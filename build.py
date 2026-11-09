@@ -631,13 +631,15 @@ page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1
 <label>媒体<input id="f-site"></label>
 </div>
 <details class="gh"><summary>URLで読めないサイトは、保存したHTMLから読み取る</summary><div id="drop" class="drop"><p>保存したHTMLをここに落とす　または　<label class="btn">ファイルを選ぶ<input id="file" type="file" accept=".html,.htm,.mhtml" hidden></label></p><p class="fname" id="fname"></p></div></details>
-<label>links.csv に足す1行<textarea id="line" rows="3" readonly></textarea></label>
-<p><button id="copy" class="btn">この1行をコピー</button>　<a href="https://github.com/nzanke/anime-world/edit/main/content/links.csv">GitHubで links.csv を開く</a>　<span id="chk" class="warn"></span></p>
-<details class="gh"><summary>GitHubに直接追加する（任意）</summary>
-<p>GitHub の「Fine-grained personal access token」（リポジトリ anime-world だけ・Contents の Read and write）を入れると、ボタン1つで links.csv に追加して公開します。トークンはこのブラウザにだけ保存されます。</p>
-<label>トークン<input id="tok" type="password" autocomplete="off"></label>
-<p><button id="push" class="btn">追加して公開</button></p></details>
+<p class="go-row"><button id="push" class="btn big">追加して公開</button>　<span id="chk" class="warn"></span></p>
 <p id="msg" class="msg"></p>
+<div id="tokbox" class="tokbox" hidden><p>はじめにこのブラウザで一度だけ、GitHubの鍵（トークン）を貼ってください。以後は表示されません。</p>
+<label>トークン<input id="tok" type="password" autocomplete="off"></label></div>
+<p class="tokchange"><a href="#" id="tokedit">鍵を変える</a></p>
+<details class="gh"><summary>手で足す（links.csv に1行を貼る）</summary>
+<label>links.csv に足す1行<textarea id="line" rows="3" readonly></textarea></label>
+<p><button id="copy" class="btn">この1行をコピー</button>　<a href="https://github.com/nzanke/anime-world/edit/main/content/links.csv">GitHubで links.csv を開く</a></p></details>
+
 </div>''', crumbs=[(None, '記事リンクの追加')], script=f'<script src="add.js?v={JS_V}"></script>', head='<meta name="robots" content="noindex">')
 
 # このサイトについて
