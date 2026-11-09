@@ -49,7 +49,7 @@ function search(){var k=norm($('q').value);if(!k){guess();return}
 function setCands(c){var s=$('f-work');s.innerHTML=c.length?c.map(function(x){return '<option value="'+x[0]+'">'+x[1].replace(/</g,'&lt;')+'（'+x[2]+'）</option>'}).join(''):'<option value="">（番組名で探してください）</option>';out()}
 function q(v){v=(v||'').trim();return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 function line(){var w=$('f-work').value;
-  return [w,w&&byId[w]?byId[w][1]:'',$('f-kind').value,$('f-title').value,$('f-author').value,$('f-site').value,$('f-date').value,$('f-url').value,$('f-scope').value?$('f-epno').value.replace(/^[#＃]\s*/,''):'',$('f-scope').value?$('f-epsub').value:''].map(q).join(',')}
+  return [w,w&&byId[w]?byId[w][1]:'',$('f-kind').value,$('f-title').value,$('f-author').value,$('f-site').value,$('f-date').value,$('f-url').value,$('f-scope').value?$('f-epno').value.replace(/^[#＃]\s*/,''):'',$('f-scope').value?$('f-epsub').value:'',$('f-type').value].map(q).join(',')}
 function out(){$('line').value=line();$('chk').textContent=!$('f-work').value?'番組を選んでください':($('f-scope').value&&!$('f-epno').value?'話数を入れてください':'')}
 var epFor=null,epList=[];
 function loadEps(){var w=$('f-work').value,on=!!$('f-scope').value;$('ep-wrap').hidden=!on;
@@ -59,7 +59,7 @@ function loadEps(){var w=$('f-work').value,on=!!$('f-scope').value;$('ep-wrap').
   .catch(function(){$('f-ep').innerHTML='<option value="">（この番組には各話リストがありません）</option>';out()})}
 $('f-scope').addEventListener('change',loadEps);$('f-work').addEventListener('change',loadEps);$('f-ep').addEventListener('change',function(){var e=epList[+this.value];if(this.value!==''&&e){$('f-epno').value=e[0];$('f-epsub').value=e[1]||''}out()});
 ['f-epno','f-epsub'].forEach(function(id){$(id).addEventListener('input',out)});
-['f-url','f-title','f-author','f-site','f-date','f-kind','f-work'].forEach(function(id){$(id).addEventListener('input',out);$(id).addEventListener('change',out)});
+['f-url','f-title','f-author','f-site','f-date','f-kind','f-type','f-work'].forEach(function(id){$(id).addEventListener('input',out);$(id).addEventListener('change',out)});
 $('q').addEventListener('input',search);
 var dz=$('drop');
 dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over')});

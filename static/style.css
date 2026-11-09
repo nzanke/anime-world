@@ -153,3 +153,60 @@ details.gh{margin-top:1.4rem;border-top:1px solid var(--line);padding-top:.6rem;
 details.gh summary{cursor:pointer;color:var(--ai);font-weight:700}
 .drop label.btn{display:inline-block;margin:0 0 0 .4rem;color:#fff;font-size:.9rem}
 
+
+/* 最新記事 */
+.feed-lead{font-family:var(--gothic);font-size:.85rem;color:var(--sub);margin:-.4rem 0 1.4rem}
+h2.feed-h{font-size:.82rem;font-weight:700;letter-spacing:.08em;color:var(--sub);border:0;padding:0;margin:1.8rem 0 .3rem;text-transform:none}
+ul.feed{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+ul.feed li{display:grid;grid-template-columns:5.6rem 1fr;gap:.2rem 1rem;padding:.75rem .2rem;border-bottom:1px solid var(--line)}
+ul.feed time{font-family:var(--gothic);font-size:.78rem;color:var(--sub);font-variant-numeric:tabular-nums;padding-top:.2rem;letter-spacing:.02em}
+ul.feed .body{min-width:0}
+ul.feed p{margin:0}
+ul.feed .t{font-family:var(--pmincho);font-size:.98rem;line-height:1.55}
+ul.feed .t a{color:var(--ink);text-decoration:none}
+ul.feed .t a:hover{color:var(--link);text-decoration:underline}
+ul.feed .tag{display:inline-block;font-family:var(--gothic);font-size:.68rem;color:var(--mido);border:1px solid #b7cbc8;border-radius:999px;padding:0 .55em;margin-left:.5rem;vertical-align:.12em;white-space:nowrap}
+ul.feed .m{font-family:var(--gothic);font-size:.78rem;color:var(--sub);margin-top:.2rem;line-height:1.6}
+ul.feed .m .w{color:var(--ai);text-decoration:none;font-weight:700}
+ul.feed .m .w:hover{text-decoration:underline}
+ul.feed .m .ep{margin-left:.4rem}
+ul.feed .m .by::before{content:"・";margin:0 .3rem}
+/* 日付は小さく薄く（2006-09-30 の形で幅をそろえる） */
+ul.feed time{font-size:.72rem;color:#8a8d88}
+.ld{font-family:var(--gothic);font-size:.78em;color:#8a8d88;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+/* 日付はどこでも同じ見た目：2006-09-30 の形で、小さく薄く */
+table.list td:first-child,table.eps td:nth-child(3),ul.rlist .d{font-size:.78rem;color:#8a8d88;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+table.info .ld{font-size:.85em}
+/* 日付は周りの文字と同じ大きさ（高さをそろえる）にし、薄い色だけで控えめにする */
+.ld,table.info .ld{font-size:1em}
+table.list td:first-child,table.eps td:nth-child(3),ul.rlist .d{font-size:inherit}
+ul.feed time{font-size:.98rem;padding-top:0;line-height:1.55}
+
+/* 最新記事：1件1行（印・題名・番組｜媒体・日付） */
+ul.feed{border-top:1px solid var(--line)}
+ul.feed li{display:grid;grid-template-columns:auto minmax(0,1fr) 11rem 6.2rem;align-items:center;gap:0 .7rem;padding:.42rem .4rem;border-bottom:1px solid var(--line)}
+ul.feed li:hover{background:var(--pale)}
+ul.feed .tl{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.95rem;line-height:1.6}
+ul.feed .tl .t{color:var(--ink);text-decoration:none}
+ul.feed .tl .t:hover{color:var(--link);text-decoration:underline}
+ul.feed .tl .w{font-family:var(--gothic);font-size:.8rem;color:var(--sub);text-decoration:none;margin-left:.6rem}
+ul.feed .tl .w:hover{color:var(--link);text-decoration:underline}
+ul.feed .src{font-family:var(--gothic);font-size:.82rem;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ul.feed time{font-family:var(--gothic);font-size:.82rem;color:#8a8d88;font-variant-numeric:tabular-nums;text-align:right;padding:0;line-height:1.6}
+.ty{display:inline-flex;align-items:center;justify-content:center;width:1.45em;height:1.45em;border-radius:3px;font-family:var(--gothic);font-size:.72rem;font-weight:700;line-height:1;vertical-align:.1em}
+.ty-h{background:var(--ai);color:#fff}
+.ty-k{background:#fff;color:var(--mido);box-shadow:inset 0 0 0 1px var(--mido)}
+.ty-i{background:var(--mido);color:#fff}
+.ty-s{background:#fff;color:var(--sub);box-shadow:inset 0 0 0 1px #b9bcb6}
+.feed-lead .ty{margin:0 .25rem 0 .2rem}
+/* 最新記事：スマホもPCと同じ1件1行（媒体名と日付の幅だけ詰める） */
+@media (max-width:640px){ul.feed li{grid-template-columns:auto minmax(0,1fr) 5.2rem 5.4rem;gap:0 .45rem;padding:.42rem .2rem}}
+/* 最新記事：見出しを外したぶん説明文を詰める。スマホは画面が小さいので文字も小さく */
+.feed-lead{margin:0 0 1rem}
+@media (max-width:640px){
+  .feed-lead{font-size:.72rem}
+  ul.feed .tl{font-size:.57rem}
+  ul.feed .tl .w{font-size:.66rem}
+  ul.feed .src,ul.feed time{font-size:.68rem}
+  ul.feed .ty{font-size:.6rem}
+}

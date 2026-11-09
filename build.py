@@ -225,7 +225,7 @@ def render_body(text, r, hbase=4):
     return '\n'.join(out)
 
 # ---------------------------------------------------------------- ページの枠
-NAV = [('index.html', 'トップ'), ('links.html', '関連記事'),
+NAV = [('index.html', 'トップ'), ('links.html', '最新記事'),
        ('years/index.html', '年代別'), ('staff/index.html', 'スタッフ別'), ('studios/index.html', '制作会社別'),
        ('search.html', '番組名で探す'), ('about.html', 'このサイトについて')]
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
@@ -274,11 +274,12 @@ def wlink(w, r='{R}'):
     return f'<a href="{r}w/{w}.html">{esc(works[w]["title"])}</a>'
 
 def fmt_date(s):
+    """日付は 2006-09-30 の形（月まで・年までのものはそのまま）"""
     m = re.match(r'(\d{4})-(\d{2})-(\d{2})', s or '')
     if m:
-        return f'{int(m.group(1))}年{int(m.group(2))}月{int(m.group(3))}日'
+        return m.group(0)
     m = re.match(r'(\d{4})-(\d{2})', s or '')
-    return f'{int(m.group(1))}年{int(m.group(2))}月' if m else (s or '')
+    return m.group(0) if m else (s or '')
 
 def period(w):
     a, b = works[w]['start_date'], works[w]['end_date']
@@ -322,7 +323,8 @@ def link_line(l, kind_label=False):
     t = esc(l.get('題名') or l.get('URL'))
     if l.get('URL'):
         t = f'<a href="{esc(l["URL"])}">{t}</a>'
-    parts = [fmt_date(l.get('日付', '')), t, esc(l.get('筆者', '')), f'「{esc(l["媒体"])}」' if l.get('媒体') else '']
+    d = esc(l.get('日付', ''))
+    parts = [f'<span class="ld">{d}</span>' if d else '', t, esc(l.get('筆者', '')), f'「{esc(l["媒体"])}」' if l.get('媒体') else '']
     if kind_label:
         parts.append(f'（{"#" + esc(ep_no(l)) + "・" if l.get("話数") else ""}{esc(kind(l))}）')
     return '／'.join(x for x in parts if x)
@@ -367,7 +369,7 @@ for w in order:
     wk = works[w]
     y = year_of(w)
     crumbs = [('years/index.html', '年代別')] + ([(f'years/{y}.html', f'{y}年')] if y else []) + [(None, wk['title'])]
-    info = [('放送期間', period(w))]
+    info = [('放送期間', f'<span class="ld">{period(w)}</span>')]
     if studios_of[w]:
         info.append(('制作', '、'.join(slink(s) for s in studios_of[w])))
     for label, names in [('総監督', {'総監督'}), ('監督', {'監督'}), ('シリーズ構成', {'シリーズ構成'}),
@@ -454,7 +456,7 @@ for i, y in enumerate(ylist):
         ws = [w for w in years[y] if a <= int(works[w]['start_date'][5:7] or 0) <= b] if True else []
         if not ws:
             continue
-        rows = [[esc(works[w]['start_date'][5:].replace('-', '/')), wlink(w) + marks(w),
+        rows = [[esc(works[w]['start_date']), wlink(w) + marks(w),
                  '、'.join(slink(s) for s in studios_of[w]),
                  '、'.join(plink(p) for p in roles_of(w, {'総監督', '監督'}))] for w in ws]
         parts.append(fold(label, table(['開始', '番組', '制作', '監督'], rows, 'list'), len(rows), unit='番組', limit=60))
@@ -566,15 +568,25 @@ for d in sorted(dcount, key=lambda d: (d == '放送年不明', d)):
     parts.append(fold(d, '<ul class="names">' + ''.join(f'<li>{slink(x)}<span>{dcount[d][x]}</span></li>' for x in ss) + '</ul>', len(ss), 'd' + d[:4], '社', limit=60))
 page('studios/index.html', '制作会社別', '\n'.join(parts), crumbs=[(None, '制作会社別')], current='studios/index.html')
 
-# 関連記事の一覧
-lw = sorted({l['work'] for l in all_links}, key=lambda w: (works[w]['start_date'] or '9999'))
-parts = [f'<h1>関連記事</h1><p>{len(all_links)}件。番組の放送順です。</p>']
-for w in lw:
-    parts.append(f'<h2>{wlink(w)}<span class="sub">{esc(str(year_of(w) or ""))}</span></h2><ul class="links">' + ''.join(
-        f'<li>{link_line(l, True)}</li>' for l in links[w]) + '</ul>')
-if not lw:
-    parts.append('<p class="none">まだありません。</p>')
-page('links.html', '関連記事', '\n'.join(parts), crumbs=[(None, '関連記事')], current='links.html')
+# 最新記事（登録した記事を日付の新しい順に。1件1行：印・題名・番組｜媒体・日付）
+TYPE_MARK = {'評論': ('評', 'ty-h'), '感想': ('感', 'ty-k'), 'インタビュー': ('談', 'ty-i'), '資料': ('資', 'ty-s')}
+def type_mark(l):
+    t = l.get('種類', '')
+    if not t: return ''
+    ch, cl = TYPE_MARK.get(t, (t[:1], 'ty-s'))
+    return f'<span class="ty {cl}" title="{esc(t)}">{esc(ch)}</span>'
+def feed_item(l):
+    w = l['work']
+    t = esc(l.get('題名') or l.get('URL'))
+    prog = esc(works[w]['title']) + (f' {ep_label(w, l)}' if l.get('話数') else '')
+    head = f'<a class="t" href="{esc(l["URL"])}" title="{t}">{t}</a>' if l.get('URL') else f'<span class="t">{t}</span>'
+    return (f'<li>{type_mark(l)}<span class="tl">{head}<a class="w" href="w/{w}.html">{prog}</a></span>'
+            f'<span class="src">{esc(l.get("媒体") or kind(l))}</span><time>{esc(fmt_date(l.get("日付", ""))) or "—"}</time></li>')
+fl = sorted(all_links, key=lambda l: l.get('日付') or '0000', reverse=True)
+parts = [f'<p class="feed-lead">登録した記事を、記事の日付の新しい順に並べています（{len(all_links)}件）。'
+         '<span class="ty ty-h">評</span>評論　<span class="ty ty-k">感</span>感想　<span class="ty ty-i">談</span>インタビュー　<span class="ty ty-s">資</span>資料</p>']
+parts.append('<ul class="feed">' + ''.join(feed_item(l) for l in fl) + '</ul>' if fl else '<p class="none">まだありません。</p>')
+page('links.html', '最新記事', '\n'.join(parts), current='links.html')
 
 # 番組名で探す
 with open(os.path.join(OUT, 'titles.json'), 'w', encoding='utf-8') as f:
@@ -606,6 +618,7 @@ page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1
 <label>記事の対象<select id="f-scope"><option value="">番組全体（関連記事）</option><option value="ep">話数単位（関連記事（話数単位））</option></select></label>
 <div id="ep-wrap" class="grid" hidden><label class="w2">各話リストから選ぶ<select id="f-ep"></select></label><label>話数（数字）<input id="f-epno" placeholder="1"></label><label>サブタイトル<input id="f-epsub"></label></div>
 <div class="grid">
+<label>種類<select id="f-type"><option>評論</option><option selected>感想</option><option>インタビュー</option><option>資料</option></select></label>
 <label>分類（媒体）<select id="f-kind"><option>ブログ</option><option>ネットメディア</option><option>雑誌</option><option>書籍</option><option>新聞</option><option>ウェブサイト</option><option>その他</option></select></label>
 <label>日付<input id="f-date" placeholder="2006-09-30"></label>
 <label class="w2">題名<input id="f-title"></label>
