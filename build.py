@@ -581,6 +581,7 @@ def feed_item(l):
     prog = esc(works[w]['title']) + (f' {ep_label(w, l)}' if l.get('話数') else '')
     head = f'<a class="t" href="{esc(l["URL"])}" title="{t}">{t}</a>' if l.get('URL') else f'<span class="t">{t}</span>'
     return (f'<li>{type_mark(l)}<span class="tl">{head}<a class="w" href="w/{w}.html">{prog}</a></span>'
+            f'<a class="go" href="w/{w}.html#{"links-ep" if l.get("話数") else "links"}" title="{esc(works[w]["title"])}のページへ">元記事</a>'
             f'<span class="src">{esc(l.get("媒体") or kind(l))}</span><time>{esc(fmt_date(l.get("日付", ""))) or "—"}</time></li>')
 fl = sorted(all_links, key=lambda l: l.get('日付') or '0000', reverse=True)
 parts = [f'<p class="feed-lead">登録した記事を、記事の日付の新しい順に並べています（{len(all_links)}件）。'
