@@ -423,17 +423,45 @@ for w, rows in episodes.items():
         for role in EP_ROLES:
             for p, _ in ep_names(r[role]):
                 dec_works[d][p].add(w); dec_roles[d][p][role] += 1
+# 役職の切り替え（スタッフ欄の区分ごと。各話リストの役職は近い区分に入れる）
+RANK_GROUPS = ['全役職', '監督', '脚本・構成', '演出・絵コンテ', '作画', 'デザイン', '美術', '色彩・仕上', '撮影', 'CG', '音響', '音楽', '編集・現像', '企画・プロデューサー']
+EP_GROUP = {'脚本': '脚本・構成', '絵コンテ': '演出・絵コンテ', '演出': '演出・絵コンテ', '総作画監督': '作画', '作画監督': '作画'}
+grp_works = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))      # 区分 → 年代 → 人 → 作品
+grp_roles = defaultdict(lambda: defaultdict(lambda: defaultdict(Counter)))  # 区分 → 年代 → 人 → 役職
+def add_rank(g, d, p, w, role):
+    for g_ in ('全役職', g):
+        if g_ in RANK_GROUPS:
+            grp_works[g_][d][p].add(w); grp_roles[g_][d][p][role] += 1
+for w, rows in staff.items():
+    y = year_of(w)
+    if not y: continue
+    for r in rows:
+        if r['kubun'] not in SKIP_KUBUN: add_rank(r['kubun'], decade(y), r['person'], w, r['role'])
+for w, rows in episodes.items():
+    y = year_of(w)
+    if not y: continue
+    for r in rows:
+        for role in EP_ROLES:
+            for p, _ in ep_names(r[role]):
+                add_rank(EP_GROUP[role], decade(y), p, w, role)
 TOP = 50
-parts = ['<h1>スタッフランキング</h1><p class="lead">年代ごとに、その年代に始まったテレビアニメに多く関わったスタッフを並べています（数字は番組数。スタッフ欄と各話リストの脚本・絵コンテ・演出・作画監督から数えています）。名前を押すと、その人が出てくる記事を検索します。</p>']
-decs = sorted(dec_works)
-for d in decs:
-    ranked = sorted(dec_works[d].items(), key=lambda x: (-len(x[1]), x[0]))[:TOP]
-    rows = ''.join(f'<li><span class="date">{i}</span><span class="title"><a href="index.html?q={esc(p)}">{esc(p)}</a>'
-                   f'<span class="writer">{esc("・".join(r for r, _ in dec_roles[d][p].most_common(2)))}</span></span>'
-                   f'<span class="num">{len(ws)}番組</span><span class="art">{f"記事{art_count[p]}" if art_count.get(p) else ""}</span></li>'
-                   for i, (p, ws) in enumerate(ranked, 1))
-    parts.append(f'<details class="grp"{" open" if d == decs[-1] else ""}><summary>{d}<span class="n">上位{len(ranked)}人</span></summary><ul class="list rank">{rows}</ul></details>')
-page('ranking.html', 'スタッフランキング', '\n'.join(parts), current='ranking.html')
+decs = sorted(grp_works['全役職'])
+rank = {}
+for g in RANK_GROUPS:
+    rank[g] = {d: [[p, len(ws), '・'.join(r for r, _ in grp_roles[g][d][p].most_common(2)), art_count.get(p, 0)]
+                   for p, ws in sorted(grp_works[g][d].items(), key=lambda x: (-len(x[1]), x[0]))[:TOP]] for d in decs}
+rj = json.dumps({'groups': RANK_GROUPS, 'decs': decs, 'rank': rank}, ensure_ascii=False, separators=(',', ':'))
+with open(os.path.join(OUT, 'ranking.json'), 'w', encoding='utf-8') as f: f.write(rj)
+RANK_V = hashlib.sha1(rj.encode('utf-8')).hexdigest()[:8]
+shutil.copy(D('static', 'ranking.js'), OUT)
+RJS_V = hashlib.sha1(open(D('static', 'ranking.js'), 'rb').read()).hexdigest()[:8]
+GHUE = {g: (250 + i * 360 // len(RANK_GROUPS)) % 360 for i, g in enumerate(RANK_GROUPS)}   # 役職ごとの色相（明るさ・彩度はそろえる）
+btns = ''.join(f'<button type="button" data-g="{esc(g)}" style="--h:{GHUE[g]}"{" class=on" if g == "全役職" else ""}>{esc(g)}</button>' for g in RANK_GROUPS)
+dets = ''.join(f'<details class="grp" data-d="{esc(d)}"{" open" if d == decs[-1] else ""}><summary>{esc(d)}<span class="n"></span></summary><ul class="list rank"></ul></details>' for d in decs)
+page('ranking.html', 'スタッフランキング', f'''<h1>スタッフランキング</h1><p class="lead">年代ごとに、その年代に始まったテレビアニメに多く関わったスタッフを並べています（数字は番組数。スタッフ欄と各話リストの脚本・絵コンテ・演出・作画監督から数えています）。役職を押すと切り替わります。名前を押すと、その人が出てくる記事を検索します。</p>
+<div class="seg" id="seg">{btns}</div>
+<div id="rank">{dets}</div>''', current='ranking.html',
+     script=f'<script>window.RANK="ranking.json?v={RANK_V}"</script><script src="ranking.js?v={RJS_V}"></script>')
 
 
 # 追加ページ用の各話の一覧（eps/<番組ID>.json）
