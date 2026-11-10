@@ -19,7 +19,7 @@ warnings = []
 
 # ---------------------------------------------------------------- 設定
 def read_conf():
-    conf = {'サイト名': 'アニメレビュー保管庫', '説明': '', '筆者': ''}
+    conf = {'サイト名': 'アニメインタビュー検索', '説明': '', '筆者': ''}
     if os.path.exists(D('content', 'site.txt')):
         for line in open(D('content', 'site.txt'), encoding='utf-8-sig'):
             if ':' in line and not line.startswith('#'):
@@ -225,7 +225,7 @@ def render_body(text, r, hbase=4):
     return '\n'.join(out)
 
 # ---------------------------------------------------------------- ページの枠
-NAV = [('index.html', '記事検索'), ('ranking.html', 'スタッフランキング'), ('about.html', 'このサイトについて')]
+NAV = [('index.html', 'インタビュー'), ('column.html', 'レビュー'), ('ranking.html', 'スタッフランキング'), ('about.html', 'このサイトについて')]
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDMincho&family=BIZ+UDPMincho:wght@400;700&family=BIZ+UDPGothic:wght@400;700&display=swap">')
@@ -384,18 +384,25 @@ with open(os.path.join(OUT, 'index.json'), 'w', encoding='utf-8') as f:
 IDX_V = hashlib.sha1(json.dumps(index, ensure_ascii=False).encode('utf-8')).hexdigest()[:8]
 art_count = Counter(p for e in auto for p in e.get('p', []))
 
-# ---------------------------------------------------------------- 記事検索（トップ）
-sites = [s_ for s_, _ in Counter(e['s'] for e in auto).most_common()]
-page('index.html', CONF['サイト名'], f'''<h1>{esc(CONF['サイト名'])}</h1>
-<p class="lead">{esc(CONF.get('説明', ''))}</p>
-<div class="sbar"><input type="search" id="q" placeholder="番組名・スタッフ名・題名から検索（スペース区切りで AND）" autofocus>
-<select id="site"><option value="">すべてのサイト</option>{"".join(f'<option>{esc(x)}</option>' for x in sites)}</select>
-<select id="kind"><option value="">すべての種類</option><option>インタビュー</option><option>レビュー</option><option>感想</option><option>評論</option></select></div>
+# ---------------------------------------------------------------- 記事検索（インタビュー＝トップ、コラム＝別ページ）
+IS_IV = lambda e: (e.get('k') or 'インタビュー') == 'インタビュー'
+def search_page(path, mode, h1, lead, ph):
+    L = [e for e in auto if IS_IV(e) == (mode == 'interview')]
+    sites = [x for x, _ in Counter(e['s'] for e in L).most_common()]
+    kinds = [x for x, _ in Counter(e['k'] for e in L).most_common()]
+    ksel = '' if mode == 'interview' else '<select id="kind"><option value="">すべての種類</option>' + ''.join(f'<option>{esc(x)}</option>' for x in kinds) + '</select>'
+    page(path, h1 if path != 'index.html' else CONF['サイト名'], f'''<h1>{esc(h1)}</h1>
+<p class="lead">{esc(lead)}</p>
+<div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus>
+<select id="site"><option value="">すべてのサイト</option>{"".join(f'<option>{esc(x)}</option>' for x in sites)}</select>{ksel}</div>
 <div class="opts"><label><input type="checkbox" id="old"> 古い順</label></div>
 <p class="count" id="count"></p>
 <ul class="list" id="list"></ul>
-<button class="more" id="more" hidden>さらに表示</button>''', current='index.html',
-     script=f'<script>window.IDX="index.json?v={IDX_V}"</script><script src="search.js?v={SEARCH_V}"></script>')
+<button class="more" id="more" hidden>さらに表示</button>''', current=path,
+         script=f'<script>window.IDX="index.json?v={IDX_V}";window.MODE="{mode}"</script><script src="search.js?v={SEARCH_V}"></script>')
+
+search_page('index.html', 'interview', CONF['サイト名'], CONF.get('説明', ''), '番組名・スタッフ名・題名から検索（スペース区切りで AND）')
+search_page('column.html', 'column', 'アニメレビュー検索', 'アニメのレビュー・感想・評論などの記事を、番組名・スタッフ名・題名で探せる索引です。', '番組名・スタッフ名・題名から検索（スペース区切りで AND）')
 
 # ---------------------------------------------------------------- スタッフランキング（年代別・折り畳み）
 SKIP_KUBUN = COMPANY_KUBUN | {'原作・原案'}

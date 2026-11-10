@@ -24,7 +24,7 @@
   }
   function search() {
     var terms = norm($('q').value.replace(/\s+/g, ' ')).length ? $('q').value.split(/\s+/).map(norm).filter(Boolean) : [];
-    var site = $('site').value, kind = $('kind').value;
+    var site = $('site').value, kind = $('kind') ? $('kind').value : '';
     res = all.filter(function (e) {
       return (!site || e.s === site) && (!kind || e.k === kind) && terms.every(function (t) { return e._t.indexOf(t) >= 0; });
     });
@@ -34,7 +34,8 @@
     try { history.replaceState(null, '', $('q').value ? '?q=' + encodeURIComponent($('q').value) : location.pathname); } catch (x) {}
   }
   fetch(window.IDX).then(function (r) { return r.json(); }).then(function (j) {
-    all = j.items; works = j.works;
+    var iv = window.MODE !== 'column';
+    all = j.items.filter(function (e) { return ((e.k || 'インタビュー') === 'インタビュー') === iv; }); works = j.works;
     all.forEach(function (e) {
       e._t = norm([e.t, e.s, e.a, (e.w || []).slice(0, 6).map(function (w) { return works[w] ? works[w][0] : ''; }).join(' '), (e.p || []).join(' ')].join(' '));
     });
@@ -43,7 +44,7 @@
   });
   var timer;
   $('q').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 150); });
-  ['site', 'kind', 'old'].forEach(function (id) { $(id).addEventListener('change', search); });
+  ['site', 'kind', 'old'].forEach(function (id) { if ($(id)) $(id).addEventListener('change', search); });
   $('more').addEventListener('click', function () { render(true); });
   $('list').addEventListener('click', function (ev) {
     var a = ev.target.closest('.tg'); if (!a) return;

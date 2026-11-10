@@ -1,4 +1,4 @@
-# アニメレビュー保管庫（サイトの元）
+# アニメインタビュー検索（サイトの元）
 
 テレビアニメの番組ごとに、関連記事（評論・インタビュー・記事。自分が発表した評論も含む）へのリンクをまとめる静的サイト。
 `main` に変更を入れると GitHub Actions が `build.py` を動かし、GitHub Pages に公開する（初回だけ Settings → Pages → Source を「GitHub Actions」にする）。
