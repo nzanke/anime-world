@@ -7,13 +7,17 @@
   function norm(s) { return String(s || '').normalize('NFKC').toLowerCase().replace(/[\s・!！?？:：~〜～\-－「」『』【】]/g, ''); }
   var HUE = { 'インタビュー': 250, 'レビュー': 25, '評論': 25, '感想': 150, '資料': 70 };
   function hue(k) { if (k in HUE) return HUE[k]; var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 360; return h; }
+  // インタビューのページはサイトで色分けする（明るさ・彩度はそろえ、色相だけ変える）
+  var SHUE = { 'Febri': 250, 'アニメ！アニメ！': 15, 'アニメイトタイムズ': 330, 'コミックナタリー': 140, 'MANTANWEB': 50 };
+  function shue(k) { if (k in SHUE) return SHUE[k]; var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 360; return h; }
   function row(e) {
     var tags = (e.w || []).slice(0, 6).map(function (w) { var x = works[w]; return x ? '<a class="tg tw" data-q="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' : ''; }).join('') +
       (e.p || []).slice(0, 8).map(function (p) { return '<a class="tg tp" data-q="' + esc(p) + '">' + esc(p) + '</a>'; }).join('');
     return '<li><span class="date">' + (e.d ? esc(e.d.replace(/-/g, '.')) : '----.--.--') + '</span><span class="title">' +
       '<a href="' + esc(e.u) + '" target="_blank" rel="noopener">' + esc(e.t) + '</a>' +
-      '<span class="cat" style="--h:' + hue(e.k || '') + '">' + esc(e.k) + '</span>' +
-      '<span class="writer">' + esc(e.s) + (e.a ? '／' + esc(e.a) : '') + '</span>' +
+      (window.MODE !== 'column'
+        ? '<span class="cat" style="--h:' + shue(e.s) + '">' + esc(e.s) + '</span>' + (e.a ? '<span class="writer">' + esc(e.a) + '</span>' : '')
+        : '<span class="cat" style="--h:' + hue(e.k || '') + '">' + esc(e.k) + '</span><span class="writer">' + esc(e.s) + (e.a ? '／' + esc(e.a) : '') + '</span>') +
       (tags ? '<span class="tags">' + tags + '</span>' : '') + '</span></li>';
   }
   function render(more) {
