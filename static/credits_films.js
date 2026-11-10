@@ -1,13 +1,14 @@
 // アニメ映画スタッフ表：選んだ年のファイル（credits/films/YYYY.json）だけを読み込む
 (()=>{
 const BASE=window.CREDITS_BASE||'credits/';
+const gz=u=>fetch(u).then(r=>{if(!r.ok)throw new Error(r.status);return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json()});   // 年のファイルは gzip で置いてある
 const $=id=>document.getElementById(id);
 const st={y:2024,y2:2024,role:'r:監督',mode:'作品ごと',q:''};
 try{Object.assign(st,JSON.parse(localStorage.getItem('aw_film')||'{}'))}catch(e){}
 const cache=new Map();
 // 記事の役職表記が違っても、そろえた役職が同じものは1つにまとめる（「監督」と「監督・脚本」の監督）
 const merge=cs=>{const m=new Map();for(const c of cs){const k=c[1]+'\u0000'+c[2];if(!m.has(k))m.set(k,[c[1],c[1],c[2],[]]);const L=m.get(k)[3];for(const p of c[3])if(!L.includes(p))L.push(p)}return[...m.values()]};
-const load=y=>{if(!cache.has(y))cache.set(y,fetch(BASE+'films/'+y+'.json').then(r=>r.ok?r.json():{S:[],W:[]}).then(d=>d.W.map(w=>[w[0],w[1],w[2],merge(w[3].map(c=>[d.S[c[0]],d.S[c[1]],d.S[c[2]],c[3].map(i=>d.S[i])]))])).catch(()=>[]));return cache.get(y)};
+const load=y=>{if(!cache.has(y))cache.set(y,gz(BASE+'films/'+y+'.json.gz').catch(()=>({S:[],W:[]})).then(d=>d.W.map(w=>[w[0],w[1],w[2],merge(w[3].map(c=>[d.S[c[0]],d.S[c[1]],d.S[c[2]],c[3].map(i=>d.S[i])]))])).catch(()=>[]));return cache.get(y)};
 const NQ=x=>(x||'').normalize('NFKC').toLowerCase().replace(/\s+/g,'');
 const pn=x=>x.replace(/（[^（）]*）$/,'');   // 人ごとにまとめるときは、名前のあとのかっこ書きを外す
 const okRole=c=>!st.role||(st.role.startsWith('k:')?c[2]===st.role.slice(2):c[1]===st.role.slice(2));

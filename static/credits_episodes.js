@@ -1,9 +1,10 @@
 // 各話クレジット：選んだ年のファイル（credits/episodes/YYYY.json）だけを読み込む
 (()=>{
 const BASE=window.CREDITS_BASE||'credits/';
+const gz=u=>fetch(u).then(r=>{if(!r.ok)throw new Error(r.status);return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json()});   // 年のファイルは gzip で置いてある
 let D={W:[]},M=[],MS={},DL={},S=[],RL=[],FIRST=[],RG={},LOADED=null;
 const cache=new Map();
-const load=y=>{if(!cache.has(y))cache.set(y,fetch(BASE+'episodes/'+y+'.json').then(r=>r.json()));return cache.get(y)};
+const load=y=>{if(!cache.has(y))cache.set(y,gz(BASE+'episodes/'+y+'.json.gz'));return cache.get(y)};
 const SEASONS=[['冬','12-01','02-31',-1],['春','03-01','05-31',0],['夏','06-01','08-31',0],['秋','09-01','11-30',0],['通年','01-01','12-31',0]];
 const MODES=['回ごと','人ごと','季節の合計'];
 const $=id=>document.getElementById(id);

@@ -1,12 +1,13 @@
 // シーズン別スタッフ表：選んだ年のファイル（credits/staff/YYYY.json）だけを読み込む
 (()=>{
 const BASE=window.CREDITS_BASE||'credits/';
+const gz=u=>fetch(u).then(r=>{if(!r.ok)throw new Error(r.status);return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json()});   // 年のファイルは gzip で置いてある
 const $=id=>document.getElementById(id);
 const SEASONS=[['冬','12-01','02-31',-1],['春','03-01','05-31',0],['夏','06-01','08-31',0],['秋','09-01','11-30',0],['通年','01-01','12-31',0]];
 const st={year:2024,year2:2024,season:'春',role:'#CG',raw:false,q:''};
 try{Object.assign(st,JSON.parse(localStorage.getItem('aw_staff')||'{}'))}catch(e){}
 const cache=new Map();
-const load=y=>{if(!cache.has(y))cache.set(y,fetch(BASE+'staff/'+y+'.json').then(r=>r.ok?r.json():{S:[],W:[]}).then(d=>d.W.map(w=>[w[0],w[1],w[2],w[3].map(c=>[d.S[c[0]],d.S[c[1]],d.S[c[2]],c[3].map(i=>d.S[i])])])).catch(()=>[]));return cache.get(y)};
+const load=y=>{if(!cache.has(y))cache.set(y,gz(BASE+'staff/'+y+'.json.gz').catch(()=>({S:[],W:[]})).then(d=>d.W.map(w=>[w[0],w[1],w[2],w[3].map(c=>[d.S[c[0]],d.S[c[1]],d.S[c[2]],c[3].map(i=>d.S[i])])])).catch(()=>[]));return cache.get(y)};
 const NQ=x=>(x||'').normalize('NFKC').toLowerCase().replace(/\s+/g,'');
 const md=d=>{if(!d)return'';const m=d.split('-');return(+m[1])+'/'+(+m[2]||'')};
 let IX,KUB;
