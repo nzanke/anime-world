@@ -5,6 +5,7 @@
 
 
 アニメのインタビュー・レビュー記事を、番組名・スタッフ名・題名で検索できる索引。ページは記事検索（index.html）・スタッフランキング（ranking.html）・このサイトについて・記事リンクの追加（add.html、メニュー外）。
+クレジット表（メニューの「クレジット表」）：シーズン別スタッフ表（staff_season.html）・各話クレジット（episode_credits.html）・アニメ映画スタッフ表（film_staff.html）。データは `data/credits/`（1年1ファイル、ページは選んだ年だけ読み込む）で、非公開の anime-database の `tools/hyoron/export_credits.py` で書き出す。
 
 ## 記事のもと
 - `data/articles.json` … 自動で集めた記事の索引（本文なし）。非公開の anime-database の `articles/`（collect.py・tag.py）で作り、毎日 GitHub Actions で更新される

@@ -180,6 +180,7 @@ for w in links:
 def inline(s, r):
     s = esc(s)
     s = re.sub(r'\[([^\]]+)\]\((https?://[^)\s]+)\)', lambda m: f'<a href="{m.group(2)}">{m.group(1)}</a>', s)
+    s = re.sub(r'(?<!\[)\[([^\[\]]+)\]\(([\w][\w./-]*)\)', lambda m: f'<a href="{r}{m.group(2)}">{m.group(1)}</a>', s)   # サイト内のファイルへのリンク（credits/films/articles.tsv など）
     def internal(m):
         key = html.unescape(m.group(1))
         w = key if key in works else (by_title[key][0] if len(by_title.get(key, [])) == 1 else None)
@@ -225,7 +226,7 @@ def render_body(text, r, hbase=4):
     return '\n'.join(out)
 
 # ---------------------------------------------------------------- ページの枠
-NAV = [('index.html', 'インタビュー'), ('column.html', 'レビュー'), ('ranking.html', 'スタッフランキング'), ('about.html', 'このサイトについて')]
+NAV = [('index.html', 'インタビュー'), ('column.html', 'レビュー'), ('ranking.html', 'スタッフランキング'), ('staff_season.html', 'クレジット表'), ('about.html', 'このサイトについて')]
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDMincho&family=BIZ+UDPMincho:wght@400;700&family=BIZ+UDPGothic:wght@400;700&display=swap">')
@@ -498,6 +499,44 @@ page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1
 <p><button id="copy" class="btn">この1行をコピー</button>　<a href="https://github.com/nzanke/anime-world/edit/main/content/links.csv">GitHubで links.csv を開く</a></p></details>
 
 </div>''', crumbs=[(None, '記事リンクの追加')], script=f'<script src="add.js?v={JS_V}"></script>', head='<meta name="robots" content="noindex">')
+
+# クレジット表（シーズン別スタッフ表・各話クレジット・アニメ映画スタッフ表）
+# データは非公開の anime-database の tools/hyoron/export_credits.py で書き出した data/credits/（1年1ファイル。ページは選んだ年だけ読み込む）
+if os.path.isdir(D('data', 'credits')):
+    shutil.copytree(D('data', 'credits'), os.path.join(OUT, 'credits'), dirs_exist_ok=True)
+    CV = {}
+    for f in ('credits_staff.js', 'credits_episodes.js', 'credits_films.js'):
+        shutil.copy(D('static', f), OUT); CV[f] = hashlib.sha1(open(D('static', f), 'rb').read()).hexdigest()[:8]
+    # データを書き出し直したら古いファイルがブラウザに残らないよう、index.json の中身から番号を付ける
+    DV = hashlib.sha1(b''.join(open(D('data', 'credits', s_, 'index.json'), 'rb').read() for s_ in ('staff', 'episodes', 'films'))).hexdigest()[:8]
+    TABS = [('staff_season.html', 'シーズン別スタッフ表'), ('episode_credits.html', '各話クレジット'), ('film_staff.html', 'アニメ映画スタッフ表')]
+    COPY = """<script>window.CREDITS_BASE='credits/';window.CREDITS_COPY=()=>{const b=document.getElementById('copy'),o=document.getElementById('out');b.onclick=()=>{const t=o.textContent;const done=()=>{b.textContent='コピーしました';setTimeout(()=>b.textContent='テキストをコピー',1500)};const sel=()=>{const r=document.createRange();r.selectNodeContents(o);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='選択しました（Ctrl+C）'};try{navigator.clipboard.writeText(t).then(done,sel)}catch(e){sel()}}};</script>"""
+    def cpage(path, title, lead, ctl, js):
+        tabs = '<nav class="tabs" aria-label="クレジット表">' + ''.join(f'<a href="{u}"{" class=on" if u == path else ""}>{esc(t)}</a>' for u, t in TABS) + '</nav>'
+        page(path, title, f"""<h1>{esc(title)}</h1>{tabs}<p class="lead">{lead}</p>
+<div class="ctl">{ctl}</div>
+<div class="outbar"><span class="count" id="count">読み込み中…</span><button id="copy" type="button" class="cbtn">テキストをコピー</button></div>
+<pre id="out" class="out" tabindex="0"></pre>""", crumbs=[(None, title)], current='staff_season.html',
+             script=COPY.replace("'credits/'", f"'credits/'") + f'<script src="{js}?v={CV[js]}&d={DV}"></script>')
+    cpage('staff_season.html', 'シーズン別スタッフ表',
+          'テレビアニメの番組を始まった季節（冬＝前年12月〜2月、春＝3〜5月、夏＝6〜8月、秋＝9〜11月）ごとに並べ、スタッフ欄の役職から選んだものを書き出します。年を2つ選ぶと、その間に始まった番組をまとめて出します。キーワードは名前・番組名・役職から探します。',
+          '<label>年<select id="year"></select></label><label>まで<select id="year2"></select></label>'
+          '<div class="ctlg"><span class="lb">季節</span><div class="seg" id="season" role="group" aria-label="季節"></div></div>'
+          '<label>役職<select id="role"></select></label><label class="grow">キーワード<input id="q" type="search" placeholder="例：サンジゲン"></label>'
+          '<label class="chk"><input type="checkbox" id="raw"> 元の役職表記を添える</label>', 'credits_staff.js')
+    cpage('episode_credits.html', '各話クレジット',
+          '各話リストの作画監督・総作画監督・専門作画監督・脚本・絵コンテ・演出・その他のコンテを、季節ごとに書き出します。「人ごと」は担当した話数（作画監督系は同じ回の人数で割り、脚本・絵コンテ・演出は共同を0.5話）で、★はその役職で初めて名前が出た季節、年はその役職の初出年（絵コンテ・演出はコンテデビュー年）です。',
+          '<label>年<select id="year"></select></label>'
+          '<div class="ctlg"><span class="lb">季節</span><div class="seg" id="season" role="group" aria-label="季節"></div></div>'
+          '<div class="ctlg"><span class="lb">基準</span><div class="seg" id="by" role="group" aria-label="基準"></div></div>'
+          '<label>役職<select id="role"></select></label>'
+          '<div class="ctlg"><span class="lb">表示</span><div class="seg" id="mode" role="group" aria-label="表示"></div></div>', 'credits_episodes.js')
+    cpage('film_staff.html', 'アニメ映画スタッフ表',
+          '日本のアニメ映画（日本語版ウィキペディア「日本のアニメ映画作品一覧」の作品）のスタッフを、公開年と役職で書き出します。1作品＝1本で数えます。記事にスタッフが書かれていない作品は、一覧の監督・制作だけです。',
+          '<label>公開年<select id="y"></select></label><label>まで<select id="y2"></select></label>'
+          '<label>役職<select id="role"></select></label>'
+          '<div class="ctlg"><span class="lb">表示</span><div class="seg" id="mode" role="group" aria-label="表示"></div></div>'
+          '<label class="grow">キーワード<input id="q" type="search" placeholder="例：細田守"></label>', 'credits_films.js')
 
 # このサイトについて
 about = open(D('content', 'about.md'), encoding='utf-8-sig').read() if os.path.exists(D('content', 'about.md')) else ''
