@@ -12,7 +12,7 @@
   function shue(k) { if (k in SHUE) return SHUE[k]; var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 360; return h; }
   function row(e) {
     var tags = (e.w || []).slice(0, 6).map(function (w) { var x = works[w]; return x ? '<a class="tg tw" data-q="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' : ''; }).join('') +
-      (e.p || []).slice(0, 8).map(function (p) { return '<a class="tg tp" data-q="' + esc(p) + '">' + esc(p) + '</a>'; }).join('');
+      (e.p || []).filter(function (p) { return norm(e.t).indexOf(norm(p)) >= 0; }).map(function (p) { return '<a class="tg tp" data-q="' + esc(p) + '">' + esc(p) + '</a>'; }).join('');
     return '<li><span class="date">' + (e.d ? esc(e.d.replace(/-/g, '.')) : '----.--.--') + '</span><span class="title">' +
       '<a href="' + esc(e.u) + '" target="_blank" rel="noopener">' + esc(e.t) + '</a>' +
       (window.MODE !== 'column'
