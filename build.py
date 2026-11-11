@@ -390,21 +390,31 @@ art_count = Counter(p for e in auto for p in e.get('p', []))
 
 # ---------------------------------------------------------------- 記事検索（インタビュー＝トップ、コラム＝別ページ）
 IS_IV = lambda e: (e.get('k') or 'インタビュー') == 'インタビュー'
+# 一覧の印（放送・公開前のアニメと同じ見た目）：インタビューはサイト、レビューは種類
+SITE_ICON = [('Febri', 'Fe', 250), ('アキバ総研', '秋', 70), ('アニメ！アニメ！', 'AA', 15), ('アニメイトタイムズ', 'AT', 330),
+             ('コミックナタリー', 'ナ', 140), ('MANTANWEB', 'MW', 50), ('アニメハック', 'AH', 200), ('リアルサウンド', 'RS', 290), ('WebNewtype', 'NT', 100)]
+KIND_ICON = [('レビュー', '評', 25), ('評論', '評', 25), ('感想', '感', 150), ('資料', '資', 70)]
 def search_page(path, mode, h1, lead, ph):
     L = [e for e in auto if IS_IV(e) == (mode == 'interview')]
-    sites = [x for x, _ in Counter(e['s'] for e in L).most_common()]
-    kinds = [x for x, _ in Counter(e['k'] for e in L).most_common()]
-    castopt = '<label><input type="checkbox" id="cast" checked> キャスト（声優）のインタビューも出す</label>' if mode == 'interview' else ''
-    ksel = '' if mode == 'interview' else '<select id="kind"><option value="">すべての種類</option>' + ''.join(f'<option>{esc(x)}</option>' for x in kinds) + '</select>'
+    if mode == 'interview':
+        have = Counter(e['s'] for e in L)
+        icons = [x for x in SITE_ICON if x[0] in have]
+        legend = ' '.join(f'<span class="ic" style="--h:{h}">{esc(i)}</span>{esc(n)}' for n, i, h in icons)
+        castopt = '<label><input type="checkbox" id="cast" checked> キャスト（声優）のインタビューも出す（<span class="sq">声</span>の印）</label>'
+    else:
+        have = Counter(e['k'] for e in L)
+        icons = [x for x in KIND_ICON if x[0] in have]
+        legend = ' '.join(f'<span class="ic" style="--h:{h}">{esc(i)}</span>{esc(n)}' for n, i, h in icons if n != '評論')
+        castopt = ''
     page(path, h1 if path != 'index.html' else CONF['サイト名'], f'''<h1>{esc(h1)}</h1>
-<p class="lead">{esc(lead)}</p>
-<div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus>
-<select id="site"><option value="">すべてのサイト</option>{"".join(f'<option>{esc(x)}</option>' for x in sites)}</select>{ksel}</div>
+<p class="lead">{esc(lead)} {legend}</p>
+<div class="seg" id="seg"></div>
+<div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus></div>
 <div class="opts"><label><input type="checkbox" id="old"> 古い順</label>{castopt}</div>
 <p class="count" id="count"></p>
-<ul class="list" id="list"></ul>
+<ul class="ulist" id="list"></ul>
 <button class="more" id="more" hidden>さらに表示</button>''', current=path,
-         script=f'<script>window.IDX="index.json?v={IDX_V}";window.MODE="{mode}"</script><script src="search.js?v={SEARCH_V}"></script>')
+         script=f'<script>window.IDX="index.json?v={IDX_V}";window.MODE="{mode}";window.ICONS={json.dumps({n: [i, h] for n, i, h in icons}, ensure_ascii=False)}</script><script src="search.js?v={SEARCH_V}"></script>')
 
 search_page('index.html', 'interview', CONF['サイト名'], CONF.get('説明', ''), '番組名・スタッフ名・題名から検索（スペース区切りで AND）')
 search_page('column.html', 'column', 'アニメレビュー検索', 'アニメのレビュー・感想・評論などの記事を、番組名・スタッフ名・題名で探せる索引です。', '番組名・スタッフ名・題名から検索（スペース区切りで AND）')

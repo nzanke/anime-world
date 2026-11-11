@@ -158,3 +158,19 @@ ul.ulist{list-style:none;padding:0;margin:0}
   .st{flex-basis:100%;max-width:none;margin-left:0;padding-left:78px}
   .st:empty{display:none}
 }
+/* 記事検索の一覧（放送・公開前のアニメと同じ見た目。題名は折り返して全部出す） */
+.sr{align-items:flex-start}
+.sr .ud,.sr .ic{margin-top:2px}
+.sr .sb{flex:1 1 auto;min-width:0;line-height:1.5}
+.sr .un{display:inline;white-space:normal;overflow:visible;margin-right:6px}
+.sr .sq{display:inline-block;vertical-align:1px;margin-right:4px}
+.sr .tags{display:block;margin-top:3px}
+.sr .st{max-width:26%;white-space:normal;text-align:right;margin-top:3px}
+.hint2{font-size:12px;color:var(--muted);margin-left:2px}
+.opts .sq{margin:0 2px;vertical-align:1px}
+@media (max-width:600px){
+  .sr{flex-wrap:nowrap;gap:6px}
+  .sr .sb{flex:1 1 auto}
+  .sr .un{white-space:normal}
+  .sr .st{display:none}
+}
