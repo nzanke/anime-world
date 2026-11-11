@@ -553,6 +553,8 @@ NJS_V = hashlib.sha1(open(D('static', 'news.js'), 'rb').read()).hexdigest()[:8]
 nsites = [x for x, _ in Counter(s_ for e in NEWS['items'] for s_ in [e['s']] + [o[0] for o in e.get('o', [])]).most_common()]
 NCATS = [('', 'すべて', 250), ('映画', 'アニメ映画', 25), ('テレビ', 'テレビアニメ', 250), ('その他', 'その他（OVA・配信・CM・動画）', 150), ('未定', '媒体の発表なし', 70)]
 nbtn = ''.join(f'<button type="button" data-c="{c}" style="--h:{h}"{" class=on" if not c else ""}>{esc(t)}<span class="n"></span></button>' for c, t, h in NCATS)
+UCATS = [('', 'すべて', 250), ('映画', '映画', 25), ('テレビ', 'テレビ', 250), ('その他', '配信・OVAなど', 150), ('未定', '媒体未発表', 70)]
+ubtn = ''.join(f'<button type="button" data-c="{c}" style="--h:{h}"{" class=on" if not c else ""}>{esc(t)}<span class="n"></span></button>' for c, t, h in UCATS)
 NSCRIPT = lambda mode: f'<script>window.NEWS="news.json?v={NEWS_V}";window.MODE="{mode}"</script><script src="news.js?v={NJS_V}"></script>'
 page('news.html', 'アニメ制作決定ニュース', f'''<h1>アニメ制作決定ニュース</h1>
 <p class="lead">アニメ映画・テレビアニメ・その他のアニメ（OVA・配信アニメ・CM・動画）の制作決定（新規のアニメ化、続編・新作・劇場版の発表）と、その放送日・放送局・公開日のニュースを集めた一覧です。同じ発表を複数のサイトが伝えたものは1行にまとめています。毎日更新します。</p>
@@ -565,13 +567,12 @@ page('news.html', 'アニメ制作決定ニュース', f'''<h1>アニメ制作�
 <ul class="list" id="list"></ul>
 <button class="more" id="more" hidden>さらに表示</button>''', current='news.html', script=NSCRIPT('news'))
 page('upcoming.html', '放送・公開前のアニメ', f'''<h1>放送・公開前のアニメ</h1>
-<p class="lead">アニメ化・続編などの制作が決まり、まだ放送・公開されていない作品を、予定の時期の順に並べています。放送日・放送局・公開日のニュースが出ると自動で書き足します（時期は記事に書かれたもの。季節は冬＝1月、春＝4月、夏＝7月、秋＝10月として並べ、年だけのものはその年の最後に置いています）。予定の時期を過ぎたものと、発表のあとに放送が始まったテレビアニメは外しています。作品名を押すと制作決定の記事を開きます。</p>
-<div class="seg" id="seg">{nbtn}</div>
-<div class="sbar"><input type="search" id="q" placeholder="作品名から検索（スペース区切りで AND）"></div>
-<p class="jump"><a href="news.html">← 制作決定ニュースの一覧</a></p>
-<div class="opts"><label><input type="checkbox" id="newonly"> 新規のアニメ化だけ（続編・新作を除く）</label></div>
+<p class="lead">制作が決まり、まだ放送・公開されていない作品（予定の早い順、毎日更新）。<span class="ic" style="--h:25">映</span>映画 <span class="ic" style="--h:250">TV</span>テレビ <span class="ic" style="--h:150">配</span>配信・OVA・CM・動画 <span class="ic" style="--h:70">?</span>媒体未発表 <span class="sq">続</span>続編・新作。局名に指を置くと全局の日時が出ます。</p>
+<div class="seg" id="seg">{ubtn}</div>
+<div class="sbar"><input type="search" id="q" placeholder="作品名・局名で検索"></div>
+<div class="opts"><label><input type="checkbox" id="newonly"> 新規のアニメ化だけ</label><a class="jump" href="news.html">制作決定ニュースの一覧 →</a></div>
 <p class="count" id="count"></p>
-<ul class="list up" id="list"></ul>
+<ul class="ulist" id="list"></ul>
 <button class="more" id="more" hidden>さらに表示</button>''', crumbs=[('news.html', '制作決定'), (None, '放送・公開前のアニメ')], current='news.html', script=NSCRIPT('upcoming'))
 
 # ツール集（スタッフランキングとクレジット表への入口）
