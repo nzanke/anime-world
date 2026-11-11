@@ -379,7 +379,10 @@ for l in all_links:
     auto.append(e)
 auto.sort(key=lambda e: e.get('d') or '0000', reverse=True)
 used_w = {w for e in auto for w in e.get('w', [])}
-index = {'items': auto, 'works': {w: [works[w]['title'], year_of(w) or ''] for w in used_w if w in works}}
+films = {}   # 記事に出てくる映画（anime-database の tag.py が書き出す）
+if os.path.exists(D('data', 'films.tsv')):
+    for r in csv.DictReader(open(D('data', 'films.tsv'), encoding='utf-8'), delimiter='\t'): films[r['work_id']] = [r['title'], r['year']]
+index = {'items': auto, 'works': {w: ([works[w]['title'], year_of(w) or ''] if w in works else films[w]) for w in used_w if w in works or w in films}}
 with open(os.path.join(OUT, 'index.json'), 'w', encoding='utf-8') as f:
     json.dump(index, f, ensure_ascii=False, separators=(',', ':'))
 IDX_V = hashlib.sha1(json.dumps(index, ensure_ascii=False).encode('utf-8')).hexdigest()[:8]
