@@ -127,7 +127,7 @@ pre.out{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--sans);font
 .jump a:hover{text-decoration:underline}
 .also{font-size:11px;color:var(--muted);line-height:1.6}
 .also a{color:var(--muted)}
-ul.up .when{flex-basis:96px;color:var(--fg)}
+ul.up .when{flex-basis:118px;color:var(--fg);white-space:nowrap}
 ul.up .when .none{font-size:12px}
 @media (max-width:600px){ul.up .when{flex-basis:100%}}
 .tg.tk{color:var(--fg)}
