@@ -86,7 +86,7 @@ def main():
     for r in rows[1:]:
         r += [''] * (len(head) - len(r))
         url = r[ix['URL']].strip()
-        if not url or r[ix['題名']].strip():
+        if not url or (r[ix['題名']].strip() and r[ix['日付']].strip()):   # 題名か日付が空なら読みに行く
             continue
         try:
             got = parse(fetch(url), url)
