@@ -8,7 +8,7 @@
   var HUE = { 'インタビュー': 250, 'レビュー': 25, '評論': 25, '感想': 150, '資料': 70 };
   function hue(k) { if (k in HUE) return HUE[k]; var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 360; return h; }
   // インタビューのページはサイトで色分けする（明るさ・彩度はそろえ、色相だけ変える）
-  var SHUE = { 'Febri': 250, 'アニメ！アニメ！': 15, 'アニメイトタイムズ': 330, 'コミックナタリー': 140, 'MANTANWEB': 50 };
+  var SHUE = { 'Febri': 250, 'アニメ！アニメ！': 15, 'アニメイトタイムズ': 330, 'コミックナタリー': 140, 'MANTANWEB': 50, 'アキバ総研': 70 };
   function shue(k) { if (k in SHUE) return SHUE[k]; var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 360; return h; }
   function row(e) {
     var tags = (e.w || []).slice(0, Math.min(6, e.wt == null ? 6 : e.wt)).map(function (w) { var x = works[w]; return x ? '<a class="tg tw" data-q="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' : ''; }).join('') +
@@ -29,8 +29,10 @@
   function search() {
     var terms = norm($('q').value.replace(/\s+/g, ' ')).length ? $('q').value.split(/\s+/).map(norm).filter(Boolean) : [];
     var site = $('site').value, kind = $('kind') ? $('kind').value : '';
+    var cast = !$('cast') || $('cast').checked;   // キャスト（声優）のインタビューを出すか
+    try { if ($('cast')) localStorage.setItem('show-cast', cast ? '1' : '0'); } catch (x) {}
     res = all.filter(function (e) {
-      return (!site || e.s === site) && (!kind || e.k === kind) && terms.every(function (t) { return e._t.indexOf(t) >= 0; });
+      return (cast || !e.c) && (!site || e.s === site) && (!kind || e.k === kind) && terms.every(function (t) { return e._t.indexOf(t) >= 0; });
     });
     if ($('old').checked) res = res.slice().reverse();
     $('count').textContent = res.length.toLocaleString() + ' 件 / 全 ' + all.length.toLocaleString() + ' 件';
@@ -48,7 +50,8 @@
   });
   var timer;
   $('q').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 150); });
-  ['site', 'kind', 'old'].forEach(function (id) { if ($(id)) $(id).addEventListener('change', search); });
+  try { if ($('cast') && localStorage.getItem('show-cast') === '0') $('cast').checked = false; } catch (x) {}
+  ['site', 'kind', 'old', 'cast'].forEach(function (id) { if ($(id)) $(id).addEventListener('change', search); });
   $('more').addEventListener('click', function () { render(true); });
   $('list').addEventListener('click', function (ev) {
     var a = ev.target.closest('.tg'); if (!a) return;

@@ -394,12 +394,13 @@ def search_page(path, mode, h1, lead, ph):
     L = [e for e in auto if IS_IV(e) == (mode == 'interview')]
     sites = [x for x, _ in Counter(e['s'] for e in L).most_common()]
     kinds = [x for x, _ in Counter(e['k'] for e in L).most_common()]
+    castopt = '<label><input type="checkbox" id="cast" checked> キャスト（声優）のインタビューも出す</label>' if mode == 'interview' else ''
     ksel = '' if mode == 'interview' else '<select id="kind"><option value="">すべての種類</option>' + ''.join(f'<option>{esc(x)}</option>' for x in kinds) + '</select>'
     page(path, h1 if path != 'index.html' else CONF['サイト名'], f'''<h1>{esc(h1)}</h1>
 <p class="lead">{esc(lead)}</p>
 <div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus>
 <select id="site"><option value="">すべてのサイト</option>{"".join(f'<option>{esc(x)}</option>' for x in sites)}</select>{ksel}</div>
-<div class="opts"><label><input type="checkbox" id="old"> 古い順</label></div>
+<div class="opts"><label><input type="checkbox" id="old"> 古い順</label>{castopt}</div>
 <p class="count" id="count"></p>
 <ul class="list" id="list"></ul>
 <button class="more" id="more" hidden>さらに表示</button>''', current=path,
@@ -458,6 +459,7 @@ rj = json.dumps({'groups': RANK_GROUPS, 'decs': decs, 'rank': rank}, ensure_asci
 with open(os.path.join(OUT, 'ranking.json'), 'w', encoding='utf-8') as f: f.write(rj)
 RANK_V = hashlib.sha1(rj.encode('utf-8')).hexdigest()[:8]
 shutil.copy(D('static', 'ranking.js'), OUT)
+for _f in ('viewer.html', 'akiba.js'): shutil.copy(D('static', _f), OUT)   # アキバ総研の保存ページを読む閲覧ページ（febri-archive から）
 RJS_V = hashlib.sha1(open(D('static', 'ranking.js'), 'rb').read()).hexdigest()[:8]
 GHUE = {g: (250 + i * 360 // len(RANK_GROUPS)) % 360 for i, g in enumerate(RANK_GROUPS)}   # 役職ごとの色相（明るさ・彩度はそろえる）
 btns = ''.join(f'<button type="button" data-g="{esc(g)}" style="--h:{GHUE[g]}"{" class=on" if g == "全役職" else ""}>{esc(g)}</button>' for g in RANK_GROUPS)
