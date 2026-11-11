@@ -85,7 +85,7 @@ $('push').addEventListener('click',function(){
   fetch(api+'?ref=main',{headers:H}).then(function(r){if(!r.ok)throw new Error('読み込み '+r.status);return r.json()}).then(function(j){
     var cur=b64dec(j.content);if(cur.indexOf(L)>=0)throw new Error('同じ行がもうあります');
     var next=cur.replace(/\s*$/,'')+'\n'+L+'\n';
-    return fetch(api,{method:'PUT',headers:H,body:JSON.stringify({message:'記事リンクを追加：'+$('f-title').value,content:b64enc(next),sha:j.sha,branch:'main'})})
+    return fetch(api,{method:'PUT',headers:H,body:JSON.stringify({message:'記事リンクを追加：'+$('f-title').value,content:b64enc(next),sha:j.sha,branch:'main',committer:{name:'nzanke',email:'nzanke@users.noreply.github.com'},author:{name:'nzanke',email:'nzanke@users.noreply.github.com'}})})
   }).then(function(r){if(!r.ok)throw new Error('書き込み '+r.status);$('msg').textContent='追加しました。1〜2分でサイトに出ます。'})
   .catch(function(e){$('msg').textContent='できませんでした：'+e.message})});
 })();
