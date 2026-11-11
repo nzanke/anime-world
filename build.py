@@ -574,7 +574,7 @@ page('news.html', 'アニメ制作決定ニュース', f'''<h1>アニメ制作�
 <p class="jump"><a href="upcoming.html">放送・公開前のアニメ一覧（アニメ化が決まり、まだ放送・公開されていない作品）→</a></p>
 <div class="opts"><label><input type="checkbox" id="sched" checked> 放送日・放送局・公開日のニュースも出す</label><label><input type="checkbox" id="newonly"> 新規のアニメ化だけ（続編・新作を除く）</label><label><input type="checkbox" id="old"> 古い順</label></div>
 <p class="count" id="count"></p>
-<ul class="list" id="list"></ul>
+<ul class="ulist" id="list"></ul>
 <button class="more" id="more" hidden>さらに表示</button>''', current='news.html', script=NSCRIPT('news'))
 page('upcoming.html', '放送・公開前のアニメ', f'''<h1>放送・公開前のアニメ</h1>
 <p class="lead">制作が決まり、まだ放送・公開されていない作品（予定の早い順、毎日更新）。<span class="ic" style="--h:25">映</span>映画 <span class="ic" style="--h:250">TV</span>テレビ <span class="ic" style="--h:150">配</span>配信・OVA・CM・動画 <span class="ic" style="--h:70">?</span>媒体未発表 <span class="sq">続</span>続編・新作。局名に指を置くと全局の日時が出ます。</p>

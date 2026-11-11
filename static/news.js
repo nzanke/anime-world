@@ -55,12 +55,19 @@
     var tags = e.q ? '<span class="tg">続編・新作</span>' : '<span class="tg">新規</span>';
     var tv = e.tv ? '<span class="tvl">' + (e.c === '映画' ? '' : '放送・配信：') + e.tv.map(function (x) { return esc(x[0]) + (x[1] ? ' <span class="tvw">' + esc(x[1]) + '</span>' : ''); }).join('／') + '</span>' : '';
     if (UP) return uprow(e);
-    if (e.k === 's') tags = '<span class="tg tk">日程</span>';
+    // 制作決定ニュースの一覧も、記事検索と同じ見た目（月の見出し、日にちと印、題名は折り返して全部出す）
     var also = (e.o || []).map(function (o) { return '<a href="' + esc(o[1]) + '" target="_blank" rel="noopener">' + esc(o[0]) + '</a>'; }).join('・');
-    return '<li><span class="date">' + dot(e.d) + '</span><span class="title">' +
-      '<a href="' + esc(e.u) + '" target="_blank" rel="noopener">' + esc(e.t) + '</a>' + badge(e) + '<span class="writer">' + esc(e.s) + '</span>' +
-      '<span class="tags">' + tags + (e.p ? '<span class="tg">' + esc(e.p) + '</span>' : '') + tv + (also ? '<span class="also">ほかの記事：' + also + '</span>' : '') + '</span></span></li>';
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(e.d || '');
+    var dd = m ? +m[3] + '<small>' + WD[new Date(+m[1], +m[2] - 1, +m[3]).getDay()] + '</small>' : '<span class="dq">—</span>';
+    var sub = (e.p ? '<span class="tg">' + esc(e.p) + '</span>' : '') + tv + (also ? '<span class="also">ほかの記事：' + also + '</span>' : '');
+    return '<li class="ur sr"><span class="ud">' + dd + '</span>' + icon(e) +
+      '<span class="sb"><a class="un" href="' + esc(e.u) + '" target="_blank" rel="noopener">' + esc(e.t) + '</a>' +
+      (e.k === 's' ? '<span class="sq" title="放送日・放送局・公開日のニュース">日程</span>' : (e.q ? '<span class="sq" title="続編・新作">続</span>' : '')) +
+      (sub ? '<span class="tags">' + sub + '</span>' : '') + '</span>' +
+      '<span class="st">' + esc(e.s) + '</span></li>';
   }
+  var lastG = '';
+  function ngroup(e) { var m = /^(\d{4})-(\d{2})/.exec(e.d || ''); return m ? m[1] + '年' + (+m[2]) + '月' : '日付なし'; }
   function render(more) {
     if (!more) { $('list').innerHTML = ''; shown = 0; }
     if (UP) {   // 月ごとの見出しを挟み、全部を出す
@@ -68,7 +75,10 @@
       res.forEach(function (e) { var g = group(e); if (g !== g0) { html += '<li class="ug">' + esc(g) + '</li>'; g0 = g; } html += uprow(e); });
       $('list').innerHTML = html; shown = res.length; $('more').hidden = true; return;
     }
-    $('list').insertAdjacentHTML('beforeend', res.slice(shown, shown + PAGE).map(row).join(''));
+    if (!more) lastG = '';
+    var h = '';
+    res.slice(shown, shown + PAGE).forEach(function (e) { var g = ngroup(e); if (g !== lastG) { h += '<li class="ug">' + esc(g) + '</li>'; lastG = g; } h += row(e); });
+    $('list').insertAdjacentHTML('beforeend', h);
     shown = Math.min(shown + PAGE, res.length);
     $('more').hidden = shown >= res.length;
   }
