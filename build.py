@@ -591,9 +591,10 @@ page('upcoming.html', '放送・公開前のアニメ', f'''<h1>放送・公開�
 TOOLS = [('ranking.html', 'スタッフランキング', '年代ごとに、多くのテレビアニメに関わったスタッフを並べます。役職で切り替えられます。'),
          ('staff_season.html', 'シーズン別スタッフ表', 'テレビアニメを始まった季節ごとに並べ、選んだ役職のスタッフを書き出します。'),
          ('episode_credits.html', '各話クレジット', '各話リストの作画監督・脚本・絵コンテ・演出などを、季節ごとに書き出します。'),
-         ('film_staff.html', 'アニメ映画スタッフ表', 'アニメ映画のスタッフを、公開年と役職で書き出します。')]
+         ('film_staff.html', 'アニメ映画スタッフ表', 'アニメ映画のスタッフを、公開年と役職で書き出します。'),
+         ('https://nzanke.github.io/anime-guide/late.html#mx-2005', '深夜アニメ放送枠タイムテーブル', '1995〜2024年の深夜アニメを、局ごと・3か月ごとの放送枠の表で見ます。')]
 page('tools.html', 'ツール集', '<h1>ツール集</h1><p class="lead">番組・スタッフの基礎データを使った表とランキングです。</p><ul class="list tools">'
-     + ''.join(f'<li><span class="title"><a href="{u}">{esc(t)}</a><span class="writer">{esc(d)}</span></span></li>' for u, t, d in TOOLS if os.path.exists(os.path.join(OUT, u)) or u == 'ranking.html')
+     + ''.join(f'<li><span class="title"><a href="{u}">{esc(t)}</a><span class="writer">{esc(d)}</span></span></li>' for u, t, d in TOOLS if u.startswith('http') or os.path.exists(os.path.join(OUT, u)) or u == 'ranking.html')
      + '</ul>', current='tools.html')
 
 # このサイトについて
