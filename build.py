@@ -592,6 +592,7 @@ TOOLS = [('ranking.html', 'スタッフランキング', '年代ごとに、多�
          ('staff_season.html', 'シーズン別スタッフ表', 'テレビアニメを始まった季節ごとに並べ、選んだ役職のスタッフを書き出します。'),
          ('episode_credits.html', '各話クレジット', '各話リストの作画監督・脚本・絵コンテ・演出などを、季節ごとに書き出します。'),
          ('film_staff.html', 'アニメ映画スタッフ表', 'アニメ映画のスタッフを、公開年と役職で書き出します。'),
+         ('https://nzanke.github.io/febri-archive/index.html', 'Febri・アキバ総研 記事アーカイブ索引', '閉鎖したアニメ情報サイト Febri とアキバ総研の記事を、インターネットアーカイブの保存ページへのリンクで探せます。連載一覧もあります。'),
          ('https://nzanke.github.io/anime-guide/index.html#golden-1990s', 'アニメ放送枠タイムテーブル', '1960〜2010年代のテレビアニメを、曜日・時間帯・局ごとの半年単位の番組表で見ます。'),
          ('https://nzanke.github.io/anime-guide/late.html#mx-2005', '深夜アニメ放送枠タイムテーブル', '1995〜2024年の深夜アニメを、局ごと・3か月ごとの放送枠の表で見ます。')]
 page('tools.html', 'ツール集', '<h1>ツール集</h1><p class="lead">番組・スタッフの基礎データを使った表とランキングです。</p><ul class="list tools">'
