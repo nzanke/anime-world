@@ -392,7 +392,8 @@ art_count = Counter(p for e in auto for p in e.get('p', []))
 IS_IV = lambda e: (e.get('k') or 'インタビュー') == 'インタビュー'
 # 一覧の印（放送・公開前のアニメと同じ見た目）：インタビューはサイト、レビューは種類
 SITE_ICON = [('Febri', 'Fe', 250), ('アキバ総研', '秋', 70), ('アニメ！アニメ！', 'AA', 15), ('アニメイトタイムズ', 'AT', 330),
-             ('コミックナタリー', 'ナ', 140), ('MANTANWEB', 'MW', 50), ('アニメハック', 'AH', 200), ('リアルサウンド', 'RS', 290), ('WebNewtype', 'NT', 100)]
+             ('コミックナタリー', 'ナ', 140), ('MANTANWEB', 'MW', 50), ('アニメハック', 'AH', 200), ('リアルサウンド', 'RS', 290), ('WebNewtype', 'NT', 100),
+             ('J:magazine!', 'J', 180), ('MOVIE WALKER PRESS', 'MV', 310), ('Mikiki', 'Mk', 160), ('美術手帖', '美', 40), ('GIGAZINE', 'GI', 230), ('映画ナタリー', '映ナ', 120)]
 KIND_ICON = [('レビュー', '評', 25), ('評論', '評', 25), ('感想', '感', 150), ('資料', '資', 70)]
 def search_page(path, mode, h1, lead, ph):
     L = [e for e in auto if IS_IV(e) == (mode == 'interview')]
