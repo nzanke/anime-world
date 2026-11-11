@@ -40,6 +40,7 @@ def parse(raw, url):
     t = html.unescape(t).strip()
     if site:
         t = re.sub(r'\s*[:：|｜\-－]\s*' + re.escape(site) + r'\s*$', '', t)
+        t = re.sub(r'^' + re.escape(site) + r'\s*[:：|｜\-－]\s*', '', t)   # 「TBS INNOVATION LAND | 題名」のように頭に付く場合
     ld_date = ld_author = ''
     for block in p.ld:
         try:
