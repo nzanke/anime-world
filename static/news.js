@@ -13,7 +13,7 @@
   }
   function row(e) {
     var tags = e.q ? '<span class="tg">続編・新作</span>' : '<span class="tg">新規</span>';
-    var tv = e.tv ? '<span class="tg">' + (e.c === '映画' ? '' : '放送・配信：') + esc(e.tv.join('・')) + '</span>' : '';
+    var tv = e.tv ? '<span class="tvl">' + (e.c === '映画' ? '' : '放送・配信：') + e.tv.map(function (x) { return esc(x[0]) + (x[1] ? ' <span class="tvw">' + esc(x[1]) + '</span>' : ''); }).join('／') + '</span>' : '';
     if (UP) {
       var sched = e.su ? '<span class="also"><a href="' + esc(e.su) + '" target="_blank" rel="noopener">日程の記事（' + esc(e.ss) + '）</a></span>' : '';
       return '<li><span class="date when">' + (e.p ? esc(e.p) : '<span class="none">時期未発表</span>') + '</span><span class="title">' +
@@ -51,7 +51,7 @@
   }
   fetch(window.NEWS).then(function (r) { return r.json(); }).then(function (j) {
     all = (UP ? j.upcoming : j.items) || [];
-    all.forEach(function (e) { e._t = norm([e.t, e.n, e.s, e.p, (e.tv || []).join(' ')].join(' ')); });
+    all.forEach(function (e) { e._t = norm([e.t, e.n, e.s, e.p, (e.tv || []).map(function (x) { return x[0]; }).join(' ')].join(' ')); });
     var q = new URLSearchParams(location.search).get('q'); if (q) $('q').value = q;
     search();
   });

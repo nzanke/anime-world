@@ -131,3 +131,5 @@ ul.up .when{flex-basis:96px;color:var(--fg)}
 ul.up .when .none{font-size:12px}
 @media (max-width:600px){ul.up .when{flex-basis:100%}}
 .tg.tk{color:var(--fg)}
+.tvl{flex-basis:100%;font-size:12px;color:var(--fg);line-height:1.6}
+.tvw{color:var(--muted);font-variant-numeric:tabular-nums}
