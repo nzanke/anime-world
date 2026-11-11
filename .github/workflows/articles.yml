@@ -1,0 +1,58 @@
+name: 記事の新着を集めて索引を更新
+# 公開リポジトリで動かすと GitHub Actions の実行時間が無料になるため、記事集めはこちらで動かす。
+# プログラムと集めた本文は非公開の nzanke/anime-database に置いたまま（秘密の値 DB_TOKEN で読み書きする）。
+# ログに出るのは記事の題名と URL だけ（どれも各サイトで公開されているもの）。本文はログにもこのリポジトリにも出さない。
+on:
+  schedule:
+    - cron: '17 21 * * *'     # 毎日 6:17（日本時間）
+  workflow_dispatch:
+    inputs:
+      args:
+        description: 'collect.py に渡す指定（例：crawl mantan --minutes 30）。空なら新着だけ'
+        required: false
+        default: ''
+permissions:
+  contents: write
+concurrency:
+  group: articles-${{ github.event.inputs.args || 'update' }}
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests beautifulsoup4
+      - name: 非公開の anime-database を取ってくる
+        env:
+          DB_TOKEN: ${{ secrets.DB_TOKEN }}
+        run: git clone -q --depth 1 "https://x-access-token:${DB_TOKEN}@github.com/nzanke/anime-database.git" /tmp/db
+      - name: 新着を集める
+        working-directory: /tmp/db
+        run: python3 articles/collect.py ${{ github.event.inputs.args || 'update' }}
+      - name: タグを付けて索引を作る
+        working-directory: /tmp/db
+        run: |
+          python3 tools/db/prepare_db.py > /dev/null
+          python3 articles/tag.py /tmp/articles.json
+          git checkout -- data/db/anime_credits.sqlite
+      - name: 集めた記事（本文込み）を anime-database に保存する
+        working-directory: /tmp/db
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add articles/data
+          git diff --cached --quiet || (git commit -q -m "記事の新着を収集" && for i in 1 2 3 4 5 6; do git pull -q --rebase && git push -q && break; sleep $((i*7)); done)
+      - name: 索引をこのサイトに置く（サイトの組み立てが動くよう、DB_TOKEN で押す）
+        env:
+          DB_TOKEN: ${{ secrets.DB_TOKEN }}
+        run: |
+          git remote set-url origin "https://x-access-token:${DB_TOKEN}@github.com/nzanke/anime-world.git"
+          cp /tmp/articles.json data/articles.json
+          cp /tmp/films.tsv data/films.tsv
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/articles.json data/films.tsv
+          git diff --cached --quiet || (git commit -q -m "記事の索引を更新" && for i in 1 2 3 4 5 6; do git pull -q --rebase -X theirs && git push -q && break; sleep $((i*7)); done)
