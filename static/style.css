@@ -175,3 +175,5 @@ ul.ulist{list-style:none;padding:0;margin:0}
   .sr .st{display:none}
 }
 .sr .tags .tvl,.sr .tags .also{margin-left:8px;font-size:12px;color:var(--muted)}
+.opts.scope .lb{color:var(--muted);margin-right:-6px}
+.opts.scope{margin-bottom:-4px}

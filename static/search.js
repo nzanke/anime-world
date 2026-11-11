@@ -49,7 +49,10 @@
     var terms = $('q').value.split(/\s+/).map(norm).filter(Boolean);
     var cast = !$('cast') || $('cast').checked;   // キャスト（声優）のインタビューを出すか
     try { if ($('cast')) localStorage.setItem('show-cast', cast ? '1' : '0'); } catch (x) {}
-    var base = all.filter(function (e) { return (cast || !e.c) && terms.every(function (t) { return e._t.indexOf(t) >= 0; }); });
+    var scope = (document.querySelector('input[name=scope]:checked') || {}).value || 'tag';
+    try { localStorage.setItem('search-scope', scope); } catch (x) {}
+    var F = scope === 'title' ? '_ti' : scope === 'all' ? '_t' : '_tg';
+    var base = all.filter(function (e) { return (cast || !e.c) && terms.every(function (t) { return e[F].indexOf(t) >= 0; }); });
     pills(base);
     res = base.filter(function (e) { return !sel || key(e) === sel; });
     if ($('old').checked) res = res.slice().reverse();
@@ -60,6 +63,11 @@
   fetch(window.IDX).then(function (r) { return r.json(); }).then(function (j) {
     all = j.items.filter(function (e) { return ((e.k || 'インタビュー') === 'インタビュー') === IV; }); works = j.works;
     all.forEach(function (e) {
+      // 探す範囲：題名だけ（_ti）／題名と表示中のタグ（_tg）／本文に出てくる作品・人まで（_t）
+      var tw = (e.w || []).slice(0, e.wt == null ? 10 : e.wt).map(function (w) { return works[w] ? works[w][0] : ''; });
+      var tp = (e.p || []).filter(function (p) { return norm(e.t).indexOf(norm(p)) >= 0; });
+      e._ti = norm(e.t);
+      e._tg = norm([e.t, e.s, e.a, tw.join(' '), tp.join(' ')].join(' '));
       e._t = norm([e.t, e.s, e.a, (e.w || []).map(function (w) { return works[w] ? works[w][0] : ''; }).join(' '), (e.p || []).join(' ')].join(' '));
     });
     var q = new URLSearchParams(location.search).get('q'); if (q) $('q').value = q;
@@ -68,6 +76,8 @@
   var timer;
   $('q').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 150); });
   try { if ($('cast') && localStorage.getItem('show-cast') === '0') $('cast').checked = false; } catch (x) {}
+  try { var sc = localStorage.getItem('search-scope'); if (sc) { var r = document.querySelector('input[name=scope][value=' + sc + ']'); if (r) r.checked = true; } } catch (x) {}
+  [].forEach.call(document.querySelectorAll('input[name=scope]'), function (r) { r.addEventListener('change', search); });
   ['old', 'cast'].forEach(function (id) { if ($(id)) $(id).addEventListener('change', search); });
   $('seg').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; sel = b.getAttribute('data-c'); search(); });
   $('more').addEventListener('click', function () { render(true); });
