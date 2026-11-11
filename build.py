@@ -226,7 +226,7 @@ def render_body(text, r, hbase=4):
     return '\n'.join(out)
 
 # ---------------------------------------------------------------- ページの枠
-NAV = [('index.html', 'インタビュー'), ('column.html', 'レビュー'), ('ranking.html', 'スタッフランキング'), ('staff_season.html', 'クレジット表'), ('about.html', 'このサイトについて')]
+NAV = [('index.html', 'インタビュー'), ('column.html', 'レビュー'), ('tools.html', 'ツール集'), ('about.html', 'このサイトについて')]
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDMincho&family=BIZ+UDPMincho:wght@400;700&family=BIZ+UDPGothic:wght@400;700&display=swap">')
@@ -464,7 +464,7 @@ btns = ''.join(f'<button type="button" data-g="{esc(g)}" style="--h:{GHUE[g]}"{"
 dets = ''.join(f'<details class="grp" data-d="{esc(d)}"{" open" if d == decs[-1] else ""}><summary>{esc(d)}<span class="n"></span></summary><ul class="list rank"></ul></details>' for d in decs)
 page('ranking.html', 'スタッフランキング', f'''<h1>スタッフランキング</h1><p class="lead">年代ごとに、その年代に始まったテレビアニメに多く関わったスタッフを並べています（数字は番組数。スタッフ欄と各話リストの脚本・絵コンテ・演出・作画監督から数えています）。役職を押すと切り替わります。名前を押すと、その人が出てくる記事を検索します。</p>
 <div class="seg" id="seg">{btns}</div>
-<div id="rank">{dets}</div>''', current='ranking.html',
+<div id="rank">{dets}</div>''', crumbs=[('tools.html', 'ツール集'), (None, 'スタッフランキング')], current='tools.html',
      script=f'<script>window.RANK="ranking.json?v={RANK_V}"</script><script src="ranking.js?v={RJS_V}"></script>')
 
 
@@ -519,7 +519,7 @@ if os.path.isdir(D('data', 'credits')):
         page(path, title, f"""<h1>{esc(title)}</h1>{tabs}<p class="lead">{lead}</p>
 <div class="ctl">{ctl}</div>
 <div class="outbar"><span class="count" id="count">読み込み中…</span><button id="copy" type="button" class="cbtn">テキストをコピー</button></div>
-<pre id="out" class="out" tabindex="0"></pre>""", crumbs=[(None, title)], current='staff_season.html',
+<pre id="out" class="out" tabindex="0"></pre>""", crumbs=[('tools.html', 'ツール集'), (None, title)], current='tools.html',
              script=COPY.replace("'credits/'", f"'credits/'") + f'<script src="{js}?v={CV[js]}&d={DV}"></script>')
     cpage('staff_season.html', 'シーズン別スタッフ表',
           'テレビアニメの番組を始まった季節（冬＝前年12月〜2月、春＝3〜5月、夏＝6〜8月、秋＝9〜11月）ごとに並べ、スタッフ欄の役職から選んだものを書き出します。年を2つ選ぶと、その間に始まった番組をまとめて出します。キーワードは名前・番組名・役職から探します。',
@@ -540,6 +540,15 @@ if os.path.isdir(D('data', 'credits')):
           '<label>役職<select id="role"></select></label>'
           '<div class="ctlg"><span class="lb">表示</span><div class="seg" id="mode" role="group" aria-label="表示"></div></div>'
           '<label class="grow">キーワード<input id="q" type="search" placeholder="例：細田守"></label>', 'credits_films.js')
+
+# ツール集（スタッフランキングとクレジット表への入口）
+TOOLS = [('ranking.html', 'スタッフランキング', '年代ごとに、多くのテレビアニメに関わったスタッフを並べます。役職で切り替えられます。'),
+         ('staff_season.html', 'シーズン別スタッフ表', 'テレビアニメを始まった季節ごとに並べ、選んだ役職のスタッフを書き出します。'),
+         ('episode_credits.html', '各話クレジット', '各話リストの作画監督・脚本・絵コンテ・演出などを、季節ごとに書き出します。'),
+         ('film_staff.html', 'アニメ映画スタッフ表', 'アニメ映画のスタッフを、公開年と役職で書き出します。')]
+page('tools.html', 'ツール集', '<h1>ツール集</h1><p class="lead">番組・スタッフの基礎データを使った表とランキングです。</p><ul class="list tools">'
+     + ''.join(f'<li><span class="title"><a href="{u}">{esc(t)}</a><span class="writer">{esc(d)}</span></span></li>' for u, t, d in TOOLS if os.path.exists(os.path.join(OUT, u)) or u == 'ranking.html')
+     + '</ul>', current='tools.html')
 
 # このサイトについて
 about = open(D('content', 'about.md'), encoding='utf-8-sig').read() if os.path.exists(D('content', 'about.md')) else ''
