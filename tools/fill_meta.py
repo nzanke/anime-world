@@ -12,6 +12,7 @@ class Meta(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.meta, self.title, self._t, self.ld, self._ld, self.times = {}, '', False, [], False, []
+        self._tm = None   # 日時の属性がない <time> の中の文字（「2026.」「10.22」と分かれていても続けて読む）
     def handle_starttag(self, tag, a):
         a = dict(a)
         if tag == 'meta':
@@ -20,12 +21,16 @@ class Meta(HTMLParser):
                 self.meta[k] = a['content'].strip()
         elif tag == 'title': self._t = True
         elif tag == 'script' and (a.get('type') or '').lower() == 'application/ld+json': self._ld = True; self.ld.append('')
-        elif tag == 'time' and a.get('datetime'): self.times.append(a['datetime'])
+        elif tag == 'time':
+            if a.get('datetime'): self.times.append(a['datetime'])
+            else: self._tm = ''
     def handle_endtag(self, tag):
         if tag == 'title': self._t = False
+        if tag == 'time' and self._tm is not None: self.times.append(self._tm.strip()); self._tm = None
         if tag == 'script': self._ld = False
     def handle_data(self, d):
         if self._t: self.title += d
+        if self._tm is not None: self._tm += d.strip()
         if self._ld: self.ld[-1] += d
 
 def pick_date(s):
