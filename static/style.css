@@ -120,3 +120,14 @@ pre.out{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--sans);font
 .ctl label,.ctl .ctlg{min-width:0;max-width:100%}
 .ctl select{max-width:100%}
 .cbtn{white-space:nowrap}
+/* 制作決定ニュース・放送・公開前のアニメ */
+#seg button .n{font-weight:400;opacity:.8;font-variant-numeric:tabular-nums}
+.jump{margin:10px 0 0;font-size:13px}
+.jump a{color:var(--accent);text-decoration:none}
+.jump a:hover{text-decoration:underline}
+.also{font-size:11px;color:var(--muted);line-height:1.6}
+.also a{color:var(--muted)}
+ul.up .when{flex-basis:96px;color:var(--fg)}
+ul.up .when .none{font-size:12px}
+@media (max-width:600px){ul.up .when{flex-basis:100%}}
+.tg.tk{color:var(--fg)}
