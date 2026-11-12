@@ -165,12 +165,10 @@ if os.path.exists(lpath):
             r = {k.strip(): (v or '').strip() for k, v in r.items() if k}
             if not any(r.values()):
                 continue
-            w = find_work(r.get('番組ID', ''), r.get('番組名', ''), f'links.csv {i}行目')
-            if not w:
-                continue
+            w = find_work(r.get('番組ID', ''), r.get('番組名', ''), f'links.csv {i}行目') if (r.get('番組ID') or r.get('番組名')) else ''
             r['work'] = w
-            links[w].append(r)
-            all_links.append(r)
+            if w: links[w].append(r)
+            all_links.append(r)   # 番組が決まっていない記事（URL だけで足したもの）も索引には載せる
 KIND_ORDER = ['ブログ', 'ネットメディア', '雑誌', '書籍', '新聞', 'ウェブサイト', 'その他']   # 媒体の種類
 kind = lambda r: r.get('分類') or r.get('種別') or 'その他'
 for w in links:
@@ -374,7 +372,7 @@ for l in all_links:
     if l.get('URL') in seen:
         continue
     e = {'u': l.get('URL', ''), 't': l.get('題名') or l.get('URL', ''), 'd': l.get('日付', ''), 's': l.get('媒体') or kind(l),
-         'k': l.get('種類') or 'インタビュー', 'w': [l['work']], 'p': []}
+         'k': l.get('種類') or 'インタビュー', 'w': [l['work']] if l['work'] else [], 'p': []}
     if l.get('筆者'): e['a'] = l['筆者']
     auto.append(e)
 auto.sort(key=lambda e: e.get('d') or '0000', reverse=True)
@@ -391,16 +389,19 @@ art_count = Counter(p for e in auto for p in e.get('p', []))
 # ---------------------------------------------------------------- 記事検索（インタビュー＝トップ、コラム＝別ページ）
 IS_IV = lambda e: (e.get('k') or 'インタビュー') == 'インタビュー'
 # 一覧の印（放送・公開前のアニメと同じ見た目）：インタビューはサイト、レビューは種類
-SITE_ICON = [('Febri', 'Fe', 250), ('アキバ総研', '秋', 70), ('アニメ！アニメ！', 'AA', 15), ('アニメイトタイムズ', 'AT', 330),
-             ('コミックナタリー', 'ナ', 140), ('MANTANWEB', 'MW', 50), ('アニメハック', 'AH', 200), ('リアルサウンド', 'RS', 290), ('WebNewtype', 'NT', 100),
-             ('J:magazine!', 'J', 180), ('MOVIE WALKER PRESS', 'MV', 310), ('Mikiki', 'Mk', 160), ('美術手帖', '美', 40), ('GIGAZINE', 'GI', 230), ('映画ナタリー', '映ナ', 120)]
+# 媒体はジャンルごとに色分けする（媒体が増えたので、媒体ごとの色はやめる）。印は媒体の略称
+GENRES = [('アニメ専門', 250), ('エンタメ総合', 25), ('カルチャー・その他', 150), ('閉鎖したサイト（保存ページ）', 70)]
+SITE_GENRE = {'アニメ！アニメ！': ('アニメ専門', 'AA'), 'アニメイトタイムズ': ('アニメ専門', 'AT'), 'アニメハック': ('アニメ専門', 'AH'), 'WebNewtype': ('アニメ専門', 'NT'),
+              'MANTANWEB': ('エンタメ総合', 'MW'), 'コミックナタリー': ('エンタメ総合', 'ナ'), '映画ナタリー': ('エンタメ総合', '映ナ'), 'リアルサウンド': ('エンタメ総合', 'RS'),
+              'MOVIE WALKER PRESS': ('エンタメ総合', 'MV'), 'J:magazine!': ('エンタメ総合', 'J'), 'TBS INNOVATION LAND': ('エンタメ総合', 'TBS'),
+              'Mikiki': ('カルチャー・その他', 'Mk'), '美術手帖': ('カルチャー・その他', '美'), 'GIGAZINE': ('カルチャー・その他', 'GI'),
+              'Febri': ('閉鎖したサイト（保存ページ）', 'Fe'), 'アキバ総研': ('閉鎖したサイト（保存ページ）', '秋')}
 KIND_ICON = [('レビュー', '評', 25), ('評論', '評', 25), ('感想', '感', 150), ('資料', '資', 70)]
 def search_page(path, mode, h1, lead, ph):
     L = [e for e in auto if IS_IV(e) == (mode == 'interview')]
     if mode == 'interview':
-        have = Counter(e['s'] for e in L)
-        icons = [x for x in SITE_ICON if x[0] in have]
-        legend = ' '.join(f'<span class="ic" style="--h:{h}">{esc(i)}</span>{esc(n)}' for n, i, h in icons)
+        legend = '／'.join(f'<span class="ic" style="--h:{h}">　</span>{esc(g)}' for g, h in GENRES)
+        icons = []
         castopt = '<label><input type="checkbox" id="cast" checked> キャスト（声優）のインタビューも出す（<span class="sq">声</span>の印）</label>'
     else:
         have = Counter(e['k'] for e in L)
@@ -409,14 +410,14 @@ def search_page(path, mode, h1, lead, ph):
         castopt = ''
     page(path, h1 if path != 'index.html' else CONF['サイト名'], f'''<h1>{esc(h1)}</h1>
 <p class="lead">{esc(lead)} {legend}</p>
-<div class="seg" id="seg"></div>
-<div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus></div>
+{'<div class="seg" id="seg"></div>' if mode != 'interview' else ''}
+<div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus>{'<div class="mpick"><button type="button" id="mbtn" aria-haspopup="true" aria-expanded="false">媒体：すべて ▾</button><div id="mpop" class="mpop" hidden></div></div>' if mode == 'interview' else ''}</div>
 <div class="opts scope"><span class="lb">探す範囲</span><label><input type="radio" name="scope" value="title"> 題名だけ</label><label><input type="radio" name="scope" value="tag" checked> 題名とタグ</label><label><input type="radio" name="scope" value="all"> 本文に出てくる作品・人まで</label></div>
 <div class="opts"><label><input type="checkbox" id="old"> 古い順</label>{castopt}</div>
 <p class="count" id="count"></p>
 <ul class="ulist" id="list"></ul>
 <button class="more" id="more" hidden>さらに表示</button>''', current=path,
-         script=f'<script>window.IDX="index.json?v={IDX_V}";window.MODE="{mode}";window.ICONS={json.dumps({n: [i, h] for n, i, h in icons}, ensure_ascii=False)}</script><script src="search.js?v={SEARCH_V}"></script>')
+         script=f'<script>window.IDX="index.json?v={IDX_V}";window.MODE="{mode}";window.ICONS={json.dumps({n: [i, h] for n, i, h in icons}, ensure_ascii=False)};window.GENRES={json.dumps(GENRES, ensure_ascii=False)};window.SITE_GENRE={json.dumps(SITE_GENRE, ensure_ascii=False)}</script><script src="search.js?v={SEARCH_V}"></script>')
 
 search_page('index.html', 'interview', CONF['サイト名'], CONF.get('説明', ''), '番組名・スタッフ名・題名から検索（スペース区切りで AND）')
 search_page('column.html', 'column', 'アニメレビュー検索', 'アニメのレビュー・感想・評論などの記事を、番組名・スタッフ名・題名で探せる索引です。', '番組名・スタッフ名・題名から検索（スペース区切りで AND）')

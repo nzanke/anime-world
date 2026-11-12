@@ -177,3 +177,20 @@ ul.ulist{list-style:none;padding:0;margin:0}
 .sr .tags .tvl,.sr .tags .also{margin-left:8px;font-size:12px;color:var(--muted)}
 .opts.scope .lb{color:var(--muted);margin-right:-6px}
 .opts.scope{margin-bottom:-4px}
+/* 媒体の選択パネル（小さな札を横に並べ、縦に長くしない） */
+.mpick{position:relative;flex:0 0 auto}
+#mbtn{font:inherit;font-size:14px;height:100%;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg,#fff);color:var(--fg);cursor:pointer;white-space:nowrap;max-width:15em;overflow:hidden;text-overflow:ellipsis}
+#mbtn.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+.mpop{position:absolute;right:0;top:calc(100% + 6px);z-index:20;width:min(600px,92vw);background:var(--bg,#fff);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.14);padding:10px 12px 12px}
+.mtop{display:flex;gap:12px;align-items:center;margin:0 0 6px;font-size:12px}
+.mtop button{font:inherit;background:none;border:0;padding:2px 0;color:var(--accent);cursor:pointer}
+.mtop .mx{margin-left:auto;font-size:18px;line-height:1;color:var(--muted)}
+.mrow{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)}
+.mg{font:inherit;font-size:11px;flex:0 0 7.5em;text-align:left;padding:3px 0;background:none;border:0;cursor:pointer;color:oklch(.45 .1 var(--h));font-weight:600;line-height:1.35}
+.mchips{display:flex;flex-wrap:wrap;gap:5px}
+.mc{font:inherit;font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--fg);cursor:pointer;white-space:nowrap}
+.mc .n{color:var(--muted);font-size:11px;margin-left:4px}
+.mc.on{background:oklch(.55 .13 var(--h));border-color:transparent;color:#fff}
+.mc.on .n{color:rgba(255,255,255,.8)}
+@media (max-width:600px){.mpop{position:fixed;left:3vw;right:3vw;width:auto;top:auto;bottom:10px;max-height:75vh;overflow:auto}.mrow{display:block}.mg{display:block;padding:0 0 4px}.mc{font-size:12px;padding:2px 8px}}
+@media (prefers-color-scheme:dark){.mpop,#mbtn{background:#1b1b1b}.mg{color:oklch(.8 .09 var(--h))}}
