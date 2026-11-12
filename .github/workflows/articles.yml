@@ -31,9 +31,14 @@ jobs:
         env:
           DB_TOKEN: ${{ secrets.DB_TOKEN }}
         run: git clone -q --depth 1 "https://x-access-token:${DB_TOKEN}@github.com/nzanke/anime-database.git" /tmp/db
-      - name: 新着を集める
+      - name: 新着を集める（15分ごとに途中まで保存する。マシンが途中で落ちても集めた分が残るように）
         working-directory: /tmp/db
-        run: python3 articles/collect.py ${{ github.event.inputs.args || 'update' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ( while sleep 900; do git add articles/data && git commit -q -m "記事の新着を収集（途中保存）" && for i in 1 2 3; do git pull -q --rebase --autostash && git push -q && break; sleep 10; done; done ) &
+          python3 articles/collect.py ${{ github.event.inputs.args || 'update' }}
+          kill %1 2>/dev/null || true
       - name: タグを付けて索引を作る
         working-directory: /tmp/db
         run: |
@@ -46,7 +51,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add articles/data
-          git diff --cached --quiet || (git commit -q -m "記事の新着を収集" && for i in 1 2 3 4 5 6; do git pull -q --rebase && git push -q && break; sleep $((i*7)); done)
+          git diff --cached --quiet || (git commit -q -m "記事の新着を収集" && for i in 1 2 3 4 5 6; do git pull -q --rebase --autostash && git push -q && break; sleep $((i*7)); done)
       - name: 索引をこのサイトに置く（サイトの組み立てが動くよう、DB_TOKEN で押す）
         env:
           DB_TOKEN: ${{ secrets.DB_TOKEN }}
