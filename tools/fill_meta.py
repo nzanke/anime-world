@@ -45,6 +45,7 @@ def parse(raw, url):
     t = html.unescape(t).strip()
     if site:
         t = re.sub(r'\s*[:：|｜\-－]\s*' + re.escape(site) + r'\s*$', '', t)
+        t = re.sub(r'\s+[|｜\-－]\s+[^|｜]*' + re.escape(site) + r'[^|｜]*$', '', t)   # 「題名 - エンタメを…｢J:magazine!｣」のように説明付きで後ろに付く場合
         t = re.sub(r'^' + re.escape(site) + r'\s*[:：|｜\-－]\s*', '', t)   # 「TBS INNOVATION LAND | 題名」のように頭に付く場合
     ld_date = ld_author = ''
     for block in p.ld:
@@ -61,7 +62,7 @@ def parse(raw, url):
                     ld_author = a.get('name', '') if isinstance(a, dict) else str(a)
     author = m.get('author') or m.get('article:author') or ld_author or (re.search(r'dc:creator="([^"]+)"', raw) or [None, ''])[1] \
         or (re.search(r'posted by\s*([^<|｜\s]+)', raw, re.I) or [None, ''])[1]
-    if author.startswith('http'): author = ''
+    if author.startswith('http') or (site and author.strip() == site.strip()): author = ''
     date = pick_date(m.get('article:published_time')) or pick_date(ld_date) or pick_date((re.search(r'dc:date="([^"]+)"', raw) or [None, ''])[1]) \
         or pick_date(p.times[0] if p.times else '') or pick_date((re.search(r'\d{4}年\d{1,2}月\d{1,2}日', re.sub(r'<[^>]+>', ' ', raw)) or [''])[0])
     return {'題名': t, '筆者': html.unescape(author).strip(), '媒体': html.unescape(site).strip(), '日付': date}
