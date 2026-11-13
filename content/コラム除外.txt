@@ -1,0 +1,14 @@
+# コラム欄（アニメレビュー検索）に出さない記事の URL。1行に1つ。消すと、また出る
+https://mikiki.tokyo.jp/articles/-/45367
+https://w.atwiki.jp/lostmediatranslation/pages/182.html
+https://www.animatetimes.com/news/details.php?id=1760682805
+https://webnewtype.com/report/anime/entry-34322.html
+https://natalie.mu/eiga/pp/wowow_ao-haru-ride2
+https://web.archive.org/web/https://febri.jp/topics/febri-recommend-oddtaxi/
+https://natalie.mu/comic/pp/lala45th_02
+https://animeanime.jp/article/2020/09/19/56390.html
+https://animeanime.jp/article/2020/02/18/51657.html
+https://natalie.mu/comic/pp/hanayume45th_03
+https://www.animatetimes.com/news/details.php?id=1509016878
+https://natalie.mu/comic/pp/museum
+http://animenomori.sblo.jp/article/44516035.html

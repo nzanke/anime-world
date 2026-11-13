@@ -375,6 +375,10 @@ for l in all_links:
          'k': l.get('種類') or 'インタビュー', 'w': [l['work']] if l['work'] else [], 'p': []}
     if l.get('筆者'): e['a'] = l['筆者']
     auto.append(e)
+# コラム欄（レビュー・感想・評論・資料）から外す記事：content/コラム除外.txt の URL（インタビューはそのまま）
+_cx = D('content', 'コラム除外.txt')
+COLUMN_EXCLUDE = {l.strip() for l in open(_cx, encoding='utf-8') if l.strip() and not l.startswith('#')} if os.path.exists(_cx) else set()
+auto = [e for e in auto if not ((e.get('k') or 'インタビュー') != 'インタビュー' and e.get('u') in COLUMN_EXCLUDE)]
 auto.sort(key=lambda e: e.get('d') or '0000', reverse=True)
 used_w = {w for e in auto for w in e.get('w', [])}
 films = {}   # 記事に出てくる映画（anime-database の tag.py が書き出す）
