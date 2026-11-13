@@ -36,30 +36,35 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          ( while sleep 900; do git add articles/data && git commit -q -m "記事の新着を収集（途中保存）" && for i in 1 2 3; do git pull -q --rebase --autostash && git push -q && break; sleep 10; done; done ) &
+          ( while sleep 900; do python3 articles/save_data.py "記事の新着を収集（途中保存）" || true; done ) &
           python3 articles/collect.py ${{ github.event.inputs.args || 'update' }}
           kill %1 2>/dev/null || true
-      - name: タグを付けて索引を作る
+      - name: 集めた記事（本文込み）を anime-database に保存する（GitHub の最新に自分の分を足す。同時に動く取得とぶつかっても失われない）
+        if: always()
+        working-directory: /tmp/db
+        run: python3 articles/save_data.py "記事の新着を収集"
+      - name: タグを付けて索引を作る（保存したあとの最新の記事データ全部から）
         working-directory: /tmp/db
         run: |
           python3 tools/db/prepare_db.py > /dev/null
           python3 articles/tag.py /tmp/articles.json
           git checkout -- data/db/anime_credits.sqlite
-      - name: 集めた記事（本文込み）を anime-database に保存する
-        working-directory: /tmp/db
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add articles/data
-          git diff --cached --quiet || (git commit -q -m "記事の新着を収集" && for i in 1 2 3 4 5 6; do git pull -q --rebase --autostash && git push -q && break; sleep $((i*7)); done)
       - name: 索引をこのサイトに置く（サイトの組み立てが動くよう、DB_TOKEN で押す）
         env:
           DB_TOKEN: ${{ secrets.DB_TOKEN }}
         run: |
           git remote set-url origin "https://x-access-token:${DB_TOKEN}@github.com/nzanke/anime-world.git"
-          cp /tmp/articles.json data/articles.json
-          cp /tmp/films.tsv data/films.tsv
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull -q --rebase
+          # 安全装置：公開中の索引より1割以上少なければ公開しない（壊れたデータで作った索引で上書きしないように）
+          python3 -c "
+          import json,sys
+          n=lambda p:(lambda d:len(d if isinstance(d,list) else d['items']))(json.load(open(p,encoding='utf-8')))
+          new,old=n('/tmp/articles.json'),n('data/articles.json')
+          print('新しい索引',new,'件／公開中',old,'件')
+          sys.exit(1 if new<old*0.9 else 0)"
+          cp /tmp/articles.json data/articles.json
+          cp /tmp/films.tsv data/films.tsv
           git add data/articles.json data/films.tsv
           git diff --cached --quiet || (git commit -q -m "記事の索引を更新" && for i in 1 2 3 4 5 6; do git pull -q --rebase -X theirs && git push -q && break; sleep $((i*7)); done)
