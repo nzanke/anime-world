@@ -194,3 +194,8 @@ ul.ulist{list-style:none;padding:0;margin:0}
 .mc.on .n{color:rgba(255,255,255,.8)}
 @media (max-width:600px){.mpop{position:fixed;left:3vw;right:3vw;width:auto;top:auto;bottom:10px;max-height:75vh;overflow:auto}.mrow{display:block}.mg{display:block;padding:0 0 4px}.mc{font-size:12px;padding:2px 8px}}
 @media (prefers-color-scheme:dark){.mpop,#mbtn{background:#1b1b1b}.mg{color:oklch(.8 .09 var(--h))}}
+
+/* 記事リンクの追加：まとめて追加 */
+.add.bulk{margin-bottom:28px}
+.add.bulk textarea{width:100%;font-family:inherit;font-size:14px;line-height:1.6}
+h2.add-one{margin-top:8px}

@@ -495,6 +495,15 @@ for w in episodes:
 # 記事リンクの追加（筆者用。メニューには出さず、検索にも載せない）
 shutil.copy(D('static', 'add.js'), OUT)
 page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1>
+<section class="add bulk">
+<h2>まとめて追加（コラム欄）</h2>
+<label>記事のURL（1行に1つ）<textarea id="b-urls" rows="8" placeholder="https://…&#10;https://…"></textarea></label>
+<div class="grid"><label>種類<select id="b-type"><option>評論</option><option selected>感想</option><option>資料</option></select></label></div>
+<p class="hint">題名・日付・媒体は、公開のときにページから自動で入ります。もう入っているURLと、同じURLの重複は除きます。番組とは結び付けません。</p>
+<p class="go-row"><button id="b-push" class="btn big">まとめて追加して公開</button>　<span id="b-count" class="warn"></span></p>
+<p id="b-msg" class="msg"></p>
+</section>
+<h2 class="add-one">1本ずつ追加（番組を選ぶ）</h2>
 <div class="add">
 <label>記事のURL<input id="f-url" type="url" placeholder="https://…" autofocus></label>
 <p class="hint">URLだけで登録できます。題名・筆者・媒体・日付は空のままでよく、公開のときにページから自動で入ります（下の欄に書いたものが優先）。</p>
