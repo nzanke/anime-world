@@ -101,7 +101,7 @@ $('b-push').addEventListener('click',function(){
   $('b-msg').textContent='追加しています…';
   fetch(api+'?ref=main',{headers:H}).then(function(r){if(!r.ok)throw new Error('読み込み '+r.status);return r.json()}).then(function(j){
     var cur=b64dec(j.content), have={};cur.split('\n').forEach(function(l){var m=/https?:\/\/[^,"\s]+/.exec(l);if(m)have[m[0]]=1});
-    us.forEach(function(u){if(have[u])dup++;else add.push(['','',kindOf(u),'','','','',u,'','',$('b-type').value].map(q).join(','))});
+    us.forEach(function(u){if(have[u])dup++;else add.push(['','',kindOf(u),'','','','',u,'','','コラム'].map(q).join(','))});
     if(!add.length)throw new Error('どれももう入っています');
     var next=cur.replace(/\s*$/,'')+'\n'+add.join('\n')+'\n';
     return fetch(api,{method:'PUT',headers:H,body:JSON.stringify({message:'記事リンクをまとめて追加（'+add.length+'件）',content:b64enc(next),sha:j.sha,branch:'main',committer:{name:'nzanke',email:'nzanke@users.noreply.github.com'},author:{name:'nzanke',email:'nzanke@users.noreply.github.com'}})})

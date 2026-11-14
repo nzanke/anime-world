@@ -10,7 +10,8 @@
   function norm(s) { return String(s || '').normalize('NFKC').toLowerCase().replace(/[\s・!！?？:：~〜～\-－「」『』【】]/g, ''); }
   function hash(k) { var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 360; return h; }
   function icon(name) { var x = ICONS[name] || [name.slice(0, 1), hash(name)]; return x; }
-  function eicon(e) { if (!IV) return icon(key(e)); var g = SG[site(e)]; return [g ? g[1] : site(e).slice(0, 2), GH[genre(e)] || 150]; }
+  // コラム欄は種類で分けない：媒体名の頭2文字・1色（媒体名がなければ「記」）
+  function eicon(e) { if (!IV) { var sn = site(e); return [sn && sn !== 'その他' ? sn.slice(0, 2) : '記', 25]; } var g = SG[site(e)]; return [g ? g[1] : site(e).slice(0, 2), GH[genre(e)] || 150]; }
   function phue(k) { return IV ? (GH[k] || 150) : icon(k)[1]; }
   // インタビューは媒体のジャンルで絞り込み・色分けし、媒体は選択欄で選ぶ。レビューは種類で
   var GH = {}; (window.GENRES || []).forEach(function (g) { GH[g[0]] = g[1]; });

@@ -410,14 +410,10 @@ def search_page(path, mode, h1, lead, ph):
         legend = '／'.join(f'<span class="ic" style="--h:{h}">　</span>{esc(g)}' for g, h in GENRES)
         icons = []
         castopt = '<label><input type="checkbox" id="cast" checked> キャスト（声優）のインタビューも出す（<span class="sq">声</span>の印）</label>'
-    else:
-        have = Counter(e['k'] for e in L)
-        icons = [x for x in KIND_ICON if x[0] in have]
-        legend = ' '.join(f'<span class="ic" style="--h:{h}">{esc(i)}</span>{esc(n)}' for n, i, h in icons if n != '評論')
-        castopt = ''
+    else:   # コラム欄は種類（評論・感想・資料）で分けない
+        icons, legend, castopt = [], '', ''
     page(path, h1 if path != 'index.html' else CONF['サイト名'], f'''<h1>{esc(h1)}</h1>
 <p class="lead">{esc(lead)} {legend}</p>
-{'<div class="seg" id="seg"></div>' if mode != 'interview' else ''}
 <div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus>{'<div class="mpick"><button type="button" id="mbtn" aria-haspopup="true" aria-expanded="false">媒体：すべて ▾</button><div id="mpop" class="mpop" hidden></div></div>' if mode == 'interview' else ''}</div>
 <div class="opts scope"><span class="lb">探す範囲</span><label><input type="radio" name="scope" value="title"> 題名だけ</label><label><input type="radio" name="scope" value="tag" checked> 題名とタグ</label><label><input type="radio" name="scope" value="all"> 本文に出てくる作品・人まで</label></div>
 <div class="opts"><label><input type="checkbox" id="old"> 古い順</label>{castopt}</div>
@@ -502,7 +498,6 @@ page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1
 <section class="add bulk">
 <h2>まとめて追加（コラム欄）</h2>
 <label>記事のURL（1行に1つ）<textarea id="b-urls" rows="8" placeholder="https://…&#10;https://…"></textarea></label>
-<div class="grid"><label>種類<select id="b-type"><option>評論</option><option selected>感想</option><option>資料</option></select></label></div>
 <p class="hint">題名・日付・媒体は、公開のときにページから自動で入ります。もう入っているURLと、同じURLの重複は除きます。番組とは結び付けません。</p>
 <p class="go-row"><button id="b-push" class="btn big">まとめて追加して公開</button>　<span id="b-count" class="warn"></span></p>
 <p id="b-msg" class="msg"></p>
