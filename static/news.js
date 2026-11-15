@@ -1,7 +1,7 @@
 // 制作決定ニュース（news.html。放送日・放送局・公開日の続報 k=s も）と放送・公開前のアニメ（upcoming.html）：news.json を読み、その場で絞り込む
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var UP = window.MODE === 'upcoming';
+  var UP = window.MODE === 'upcoming' || window.MODE === 'released', REL = window.MODE === 'released';   // released：一覧から外れた放送・公開済みの作品（新しい順）
   var PAGE = 200, all = [], res = [], shown = 0, cat = '';
   var CAT = { '映画': ['アニメ映画', 25], 'テレビ': ['テレビアニメ', 250], 'その他': ['その他', 150], '未定': ['媒体の発表なし', 70] };
   function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -102,7 +102,7 @@
     try { history.replaceState(null, '', $('q').value ? '?q=' + encodeURIComponent($('q').value) : location.pathname); } catch (x) {}
   }
   fetch(window.NEWS).then(function (r) { return r.json(); }).then(function (j) {
-    all = (UP ? j.upcoming : j.items) || [];
+    all = (REL ? j.released : UP ? j.upcoming : j.items) || [];
     all.forEach(function (e) { e._t = norm([e.t, e.n, e.s, e.p, (e.tv || []).map(function (x) { return x[0]; }).join(' ')].join(' ')); });
     var q = new URLSearchParams(location.search).get('q'); if (q) $('q').value = q;
     search();

@@ -594,10 +594,18 @@ page('upcoming.html', '放送・公開前のアニメ', f'''<h1>放送・公開�
 <p class="lead">制作が決まり、まだ放送・公開されていない作品（予定の早い順、毎日更新）。<span class="ic" style="--h:25">映</span>映画 <span class="ic" style="--h:250">TV</span>テレビ <span class="ic" style="--h:150">配</span>配信・OVA・CM・動画 <span class="ic" style="--h:70">?</span>媒体未発表 <span class="sq">続</span>続編・新作。局名に指を置くと全局の日時が出ます。</p>
 <div class="seg" id="seg">{ubtn}</div>
 <div class="sbar"><input type="search" id="q" placeholder="作品名・局名で検索"></div>
-<div class="opts"><label><input type="checkbox" id="newonly"> 新規のアニメ化だけ</label><a class="jump" href="news.html">制作決定ニュースの一覧 →</a></div>
+<div class="opts"><label><input type="checkbox" id="newonly"> 新規のアニメ化だけ</label><a class="jump" href="released.html">放送・公開済みになった作品 →</a><a class="jump" href="news.html">制作決定ニュースの一覧 →</a></div>
 <p class="count" id="count"></p>
 <ul class="ulist" id="list"></ul>
 <button class="more" id="more" hidden>さらに表示</button>''', crumbs=[('news.html', '制作決定'), (None, '放送・公開前のアニメ')], current='news.html', script=NSCRIPT('upcoming'))
+page('released.html', '放送・公開済みになったアニメ', f'''<h1>放送・公開済みになったアニメ</h1>
+<p class="lead">放送・公開前の一覧に載っていて、放送・公開が始まったので一覧から外れた作品（放送・公開の新しい順、毎日更新）。日付は記事で発表された放送・公開日です。<span class="ic" style="--h:25">映</span>映画 <span class="ic" style="--h:250">TV</span>テレビ <span class="ic" style="--h:150">配</span>配信・OVA・CM・動画 <span class="ic" style="--h:70">?</span>媒体未発表 <span class="sq">続</span>続編・新作</p>
+<div class="seg" id="seg">{ubtn}</div>
+<div class="sbar"><input type="search" id="q" placeholder="作品名で検索"></div>
+<div class="opts"><label><input type="checkbox" id="newonly"> 新規のアニメ化だけ</label><a class="jump" href="upcoming.html">放送・公開前のアニメ →</a><a class="jump" href="news.html">制作決定ニュースの一覧 →</a></div>
+<p class="count" id="count"></p>
+<ul class="ulist" id="list"></ul>
+<button class="more" id="more" hidden>さらに表示</button>''', crumbs=[('news.html', '制作決定'), ('upcoming.html', '放送・公開前のアニメ'), (None, '放送・公開済み')], current='news.html', script=NSCRIPT('released'))
 
 # ツール集（スタッフランキングとクレジット表への入口）
 TOOLS = [('ranking.html', 'スタッフランキング', '年代ごとに、多くのテレビアニメに関わったスタッフを並べます。役職で切り替えられます。'),
