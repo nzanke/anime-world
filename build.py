@@ -396,6 +396,7 @@ for e in auto:
     e['wt'] = len(ov.get('w', []))
     e['p'] = ov.get('p', []) + [p for p in e.get('p', []) if p not in ov.get('p', []) and p not in gone_p]
     e['pt'] = ov.get('p', []); e['ed'] = 1
+    if ov.get('x'): e['x'] = ov['x']   # 新しく作ったタグ（作品・人以外の言葉）
 used_w = {w for e in auto for w in e.get('w', [])}
 films = {}   # 映画：記事に出てくるもの（anime-database の tag.py が書き出す）と、映画台帳の全作品（タグの候補用）
 for fn in ('films_all.tsv', 'films.tsv'):
@@ -408,7 +409,8 @@ IDX_V = hashlib.sha1(json.dumps(index, ensure_ascii=False).encode('utf-8')).hexd
 art_count = Counter(p for e in auto for p in e.get('p', []))
 # タグ編集の予測変換の候補：全作品（番組・映画）と人（スタッフの台帳と記事に出てきた名前）。記事の多いものを先に
 w_count = Counter(w for e in auto for w in e.get('w', []))
-_names = {p for p in set(p_staff) | set(art_count) if p and 2 <= len(p) <= 20 and not re.search(r'[「」『』（）()]', p)}   # クレジット表記そのままのもの（「〜」より など）は外す
+_roles = {r.get(k) for rows in staff.values() for r in rows for k in ('role', 'role_raw')}   # 役職名（名前の欄に役職が入った行がある）
+_names = {p for p in set(p_staff) | set(art_count) if p and 2 <= len(p) <= 20 and p not in _roles and not re.search(r'[「」『』（）()]', p)}   # クレジット表記そのままのもの（「〜」より など）は外す
 _by2 = defaultdict(list)
 for p in _names: _by2[p[:2]].append(p)
 t_count = Counter()   # 記事の題名に名前が出てくる回数（映画の監督など、テレビのスタッフに少ない人も上に来るように）
@@ -418,7 +420,8 @@ for e in auto:
         for p in _by2.get(t[i:i + 2], ()):
             if t.startswith(p, i): hit.add(p)
     t_count.update(hit)
-tagnames = {'w': sorted([[w, works[w]['title'], year_of(w) or '', w_count[w]] for w in works] + [[w, t[0], t[1], w_count[w]] for w, t in films.items()], key=lambda x: -x[3]),
+x_count = Counter(x for e in auto for x in e.get('x', []))   # 新しく作ったタグ（ほかの記事の編集でも候補に出す）
+tagnames = {'x': sorted([[x, n] for x, n in x_count.items()], key=lambda y: -y[1]), 'w': sorted([[w, works[w]['title'], year_of(w) or '', w_count[w]] for w in works] + [[w, t[0], t[1], w_count[w]] for w, t in films.items()], key=lambda x: -x[3]),
             'p': sorted([[p, art_count[p] + t_count[p] * 3 + len(p_staff.get(p, {}))] for p in _names], key=lambda x: -x[1])}
 with open(os.path.join(OUT, 'tagnames.json'), 'w', encoding='utf-8') as f:
     json.dump(tagnames, f, ensure_ascii=False, separators=(',', ':'))

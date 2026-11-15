@@ -231,3 +231,8 @@ h2.add-one{margin-top:8px}
 /* 鍵の欄：パスワード管理のための名前の欄は見せない */
 .vh{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .tokf{margin-top:10px}.tokf label{display:block;font-size:13px;color:var(--muted)}.tokf input[type=password]{width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box;margin-top:4px;background:var(--bg);color:var(--fg)}
+
+/* 新しく作ったタグ */
+.tg.tx{color:hsl(280 40% 35%);background:hsl(280 60% 96%);box-shadow:none}.tg.tx:hover{background:hsl(280 60% 91%)}
+.tk.tkx{background:hsl(280 50% 92%);color:hsl(280 40% 32%)}.teds li.new{color:var(--muted)}
+@media (prefers-color-scheme:dark){.tg.tx{color:hsl(280 60% 82%);background:hsl(280 20% 24%)}.tk.tkx{background:hsl(280 20% 26%);color:hsl(280 50% 84%)}}

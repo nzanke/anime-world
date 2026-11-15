@@ -43,7 +43,8 @@
   function row(e) {
     var sr = series(e);
     var tags = (sr ? '<a class="tg ts" data-q="' + esc(sr) + '">' + esc(sr) + '</a>' : '') + shownW(e).map(function (w) { var x = works[w]; return x ? '<a class="tg tw" data-q="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' : ''; }).join('') +
-      shownP(e).map(function (p) { return '<a class="tg tp" data-q="' + esc(p) + '">' + esc(p) + '</a>'; }).join('');
+      shownP(e).map(function (p) { return '<a class="tg tp" data-q="' + esc(p) + '">' + esc(p) + '</a>'; }).join('') +
+      (e.x || []).map(function (x) { return '<a class="tg tx" data-q="' + esc(x) + '">' + esc(x) + '</a>'; }).join('');
     var ic = eicon(e);
     var meta = IV ? (e.a || '') : e.s + (e.a ? '／' + e.a : '');
     return '<li class="ur sr"><span class="ud">' + day(e) + '</span>' +
@@ -140,10 +141,10 @@
   // 探す範囲：題名だけ（_ti）／題名と表示中のタグ（_tg）／本文に出てくる作品・人まで（_t）
   function keys(e) {
       var tw = (e.ed ? shownW(e) : (e.w || []).slice(0, e.wt == null ? 10 : e.wt)).map(function (w) { return works[w] ? works[w][0] : ''; });
-      var tp = shownP(e);
+      var tp = shownP(e).concat(e.x || []);
       e._ti = norm(e.t);
       e._tg = norm([e.t, e.s, e.a, series(e), tw.join(' '), tp.join(' ')].join(' '));
-      e._t = norm([e.t, e.s, e.a, series(e), (e.w || []).map(function (w) { return works[w] ? works[w][0] : ''; }).join(' '), (e.p || []).join(' ')].join(' '));
+      e._t = norm([e.t, e.s, e.a, series(e), (e.x || []).join(' '), (e.w || []).map(function (w) { return works[w] ? works[w][0] : ''; }).join(' '), (e.p || []).join(' ')].join(' '));
   }
   var timer;
   $('q').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 150); });
@@ -182,13 +183,14 @@
 
   // ---------------------------------------------------------------- タグの編集（鍵を入れたブラウザだけ）
   // 保存先：content/tag_edits.json（{URL: {"w": [作品番号], "p": [人の名前]}}）。公開のときに索引に反映される
-  var TN = null, TNW = [], TNP = [], ed = null;
+  var TN = null, TNW = [], TNP = [], TNX = [], ed = null;
   function kana(s) { return norm(s).replace(/[\u30a1-\u30f6]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0x60); }); }   // カタカナ→ひらがな
   function loadNames() {
     if (TN) return TN;
     TN = fetch('tagnames.json').then(function (r) { return r.json(); }).then(function (j) {
       TNW = j.w.map(function (x) { return { id: x[0], t: x[1], y: x[2], n: x[3], k: kana(x[1]) }; });
       TNP = j.p.map(function (x) { return { t: x[0], n: x[1], k: kana(x[0]) }; });
+      TNX = (j.x || []).map(function (x) { return { t: x[0], n: x[1], k: kana(x[0]) }; });
     });
     return TN;
   }
@@ -200,7 +202,10 @@
       m.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1] || a[2] - b[2]; });
       m.slice(0, max).forEach(function (r) { out.push({ kind: kind, x: r[3] }); });
     };
-    take(TNW, 'w', 7); take(TNP, 'p', 5);
+    take(TNX, 'x', 4); take(TNW, 'w', 7); take(TNP, 'p', 5);
+    // 候補にぴったり同じものがなければ、新しいタグ・人として足せるようにする
+    var q2 = q.trim();
+    if (q2 && !out.some(function (o) { return o.x.k === k; })) { out.push({ kind: 'nx', x: { t: q2 } }); out.push({ kind: 'np', x: { t: q2 } }); }
     return out;
   }
   function edRender() {
@@ -208,7 +213,8 @@
     $('ted').innerHTML = '<div class="tedh"><span class="tedt">' + esc(e.t) + '</span><button type="button" class="mx" data-a="close" aria-label="閉じる">×</button></div>' +
       '<div class="tedc">' + ed.w.map(function (w) { var x = works[w] || ['（不明な作品 ' + w + '）', '']; return '<span class="tg tw on">' + esc(x[0]) + (x[1] ? '<small>' + esc(x[1]) + '</small>' : '') + '<button type="button" data-rw="' + esc(w) + '" aria-label="外す">×</button></span>'; }).join('') +
       ed.p.map(function (p) { return '<span class="tg tp on">' + esc(p) + '<button type="button" data-rp="' + esc(p) + '" aria-label="外す">×</button></span>'; }).join('') +
-      (ed.w.length || ed.p.length ? '' : '<span class="hint">タグはありません</span>') + '</div>' +
+      ed.x.map(function (x) { return '<span class="tg tx on">' + esc(x) + '<button type="button" data-rx="' + esc(x) + '" aria-label="外す">×</button></span>'; }).join('') +
+      (ed.w.length || ed.p.length || ed.x.length ? '' : '<span class="hint">タグはありません</span>') + '</div>' +
       '<input id="tedq" type="search" autocomplete="off" placeholder="作品名・人の名前の一部を入れて足す">' +
       '<ul id="teds" class="teds"></ul>' +
       (TOKEN ? '' : '<form class="tokf" id="tedtf"><input class="vh" type="text" name="username" autocomplete="username" value="anime-world" tabindex="-1" aria-hidden="true">' +
@@ -224,6 +230,9 @@
     if (!TNW.length) { $('teds').innerHTML = q ? '<li class="hint">候補を読み込んでいます…</li>' : ''; loadNames().then(function () { if ($('tedq')) edSug(); }); return; }
     $('teds').innerHTML = suggest(q).map(function (s, i) {
       var x = s.x;
+      if (s.kind === 'x') return '<li data-x="' + esc(x.t) + '"><span class="tk tkx">タグ</span>' + esc(x.t) + (x.n ? '<i>' + x.n + '件</i>' : '') + '</li>';
+      if (s.kind === 'nx') return '<li data-x="' + esc(x.t) + '" class="new"><span class="tk tkx">新</span>「' + esc(x.t) + '」を新しいタグにする</li>';
+      if (s.kind === 'np') return '<li data-p="' + esc(x.t) + '" class="new"><span class="tk tkp">新</span>「' + esc(x.t) + '」を人として足す</li>';
       return s.kind === 'w' ? '<li data-w="' + esc(x.id) + '" data-wt="' + esc(x.t) + '" data-wy="' + esc(x.y) + '"><span class="tk">作品</span>' + esc(x.t) + (x.y ? '<small>' + esc(x.y) + '</small>' : '') + (x.n ? '<i>' + x.n + '件</i>' : '') + '</li>'
                             : '<li data-p="' + esc(x.t) + '"><span class="tk tkp">人</span>' + esc(x.t) + '</li>';
     }).join('') || (q ? '<li class="hint">候補がありません</li>' : '');
@@ -231,18 +240,20 @@
   document.addEventListener('submit', function (ev) { if (ev.target && ev.target.id === 'tedtf') ev.preventDefault(); });
   function edOpen(u) {
     var e = all.filter(function (x) { return x.u === u; })[0]; if (!e) return;
-    ed = { e: e, w: shownW(e).slice(), p: shownP(e).slice() };
+    ed = { e: e, w: shownW(e).slice(), p: shownP(e).slice(), x: (e.x || []).slice() };
     if (!$('ted')) { var d = document.createElement('div'); d.id = 'ted'; d.className = 'ted'; document.body.appendChild(d); d.addEventListener('click', edClick); }
     $('ted').hidden = false; edRender(); loadNames();
   }
   function edClose() { $('ted').hidden = true; ed = null; }
   function edClick(ev) {
     ev.stopPropagation();
-    var t = ev.target.closest('[data-a],[data-rw],[data-rp],li[data-w],li[data-p]'); if (!t) return;
+    var t = ev.target.closest('[data-a],[data-rw],[data-rp],[data-rx],li[data-w],li[data-p],li[data-x]'); if (!t) return;
     if (t.dataset.a === 'close') return edClose();
     if (t.dataset.a === 'save') return edSave();
     if (t.dataset.rw) ed.w = ed.w.filter(function (w) { return w !== t.dataset.rw; });
     if (t.dataset.rp) ed.p = ed.p.filter(function (p) { return p !== t.dataset.rp; });
+    if (t.dataset.rx) ed.x = ed.x.filter(function (x) { return x !== t.dataset.rx; });
+    if (t.dataset.x && ed.x.indexOf(t.dataset.x) < 0) { ed.x.push(t.dataset.x); if (!TNX.some(function (y) { return y.t === t.dataset.x; })) TNX.unshift({ t: t.dataset.x, n: 0, k: kana(t.dataset.x) }); }
     if (t.dataset.w) { if (ed.w.indexOf(t.dataset.w) < 0) ed.w.push(t.dataset.w); works[t.dataset.w] = works[t.dataset.w] || [t.dataset.wt, t.dataset.wy]; }
     if (t.dataset.p && ed.p.indexOf(t.dataset.p) < 0) ed.p.push(t.dataset.p);
     edRender();
@@ -256,19 +267,26 @@
       TOKEN = tv; try { localStorage.setItem('gh-token', tv); } catch (x) {}
       var f = $('tedtf'); if (f && f.requestSubmit) f.requestSubmit();   // ブラウザに「パスワードを保存」を出させる
     }
-    var e = ed.e, nw = ed.w.slice(), np = ed.p.slice();
+    var e = ed.e, nw = ed.w.slice(), np = ed.p.slice(), nx = ed.x.slice();
     var api = 'https://api.github.com/repos/nzanke/anime-world/contents/content/tag_edits.json', H = { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/vnd.github+json' };
     $('tedm').textContent = '保存しています…';
-    fetch(api + '?ref=main', { headers: H }).then(function (r) { if (!r.ok) throw new Error('読み込み ' + r.status); return r.json(); }).then(function (j) {
-      var cur = JSON.parse(b64dec(j.content) || '{}'); cur[e.u] = { w: nw, p: np };
-      var body = JSON.stringify(cur, null, 1) + '\n', who = { name: 'nzanke', email: 'nzanke@users.noreply.github.com' };
-      return fetch(api, { method: 'PUT', headers: H, body: JSON.stringify({ message: 'タグを編集：' + e.t.slice(0, 40), content: b64enc(body), sha: j.sha, branch: 'main', committer: who, author: who }) });
-    }).then(function (r) {
+    // 毎回キャッシュを使わず最新版を読み、版がぶつかったら（409）読み直して最大3回やり直す
+    function put(n) {
+      return fetch(api + '?ref=main&t=' + Date.now(), { headers: H, cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('読み込み ' + r.status); return r.json(); }).then(function (j) {
+        var cur = JSON.parse(b64dec(j.content) || '{}'); cur[e.u] = { w: nw, p: np }; if (nx.length) cur[e.u].x = nx;
+        var body = JSON.stringify(cur, null, 1) + '\n', who = { name: 'nzanke', email: 'nzanke@users.noreply.github.com' };
+        return fetch(api, { method: 'PUT', headers: H, cache: 'no-store', body: JSON.stringify({ message: 'タグを編集：' + e.t.slice(0, 40), content: b64enc(body), sha: j.sha, branch: 'main', committer: who, author: who }) });
+      }).then(function (r) {
+        if ((r.status === 409 || r.status === 422) && n < 3) return new Promise(function (ok) { setTimeout(ok, 1500 * (n + 1)); }).then(function () { return put(n + 1); });
+        return r;
+      });
+    }
+    put(0).then(function (r) {
       if (!r.ok) throw new Error('書き込み ' + r.status);
       // 画面にもすぐ反映（サイトの索引は数分で更新される）
       var gw = shownW(e).filter(function (w) { return nw.indexOf(w) < 0; }), gp = shownP(e).filter(function (p) { return np.indexOf(p) < 0; });
       e.w = nw.concat((e.w || []).filter(function (w) { return nw.indexOf(w) < 0 && gw.indexOf(w) < 0; })); e.wt = nw.length;
-      e.p = np.concat((e.p || []).filter(function (p) { return np.indexOf(p) < 0 && gp.indexOf(p) < 0; })); e.pt = np; e.ed = 1;
+      e.p = np.concat((e.p || []).filter(function (p) { return np.indexOf(p) < 0 && gp.indexOf(p) < 0; })); e.pt = np; e.ed = 1; e.x = nx;
       keys(e); edClose(); search();
     }).catch(function (x) { $('tedm').textContent = 'できませんでした：' + x.message + (/401|403/.test(x.message) ? '（鍵を確かめてください）' : ''); });
   }
