@@ -165,6 +165,8 @@ if os.path.exists(lpath):
             r = {k.strip(): (v or '').strip() for k, v in r.items() if k}
             if not any(r.values()):
                 continue
+            if re.match(r'^f\d+$', r.get('番組ID', '')):   # 映画の作品番号（data/films.tsv）：検索のタグにだけ使う（映画には番組のページがない）
+                r['work'] = r['番組ID']; all_links.append(r); continue
             w = find_work(r.get('番組ID', ''), r.get('番組名', ''), f'links.csv {i}行目') if (r.get('番組ID') or r.get('番組名')) else ''
             r['work'] = w
             if w: links[w].append(r)

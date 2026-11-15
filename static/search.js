@@ -25,8 +25,12 @@
     return +m[3] + '<small>' + WD[new Date(+m[1], +m[2] - 1, +m[3]).getDay()] + '</small>';
   }
   function group(e) { var m = /^(\d{4})-(\d{2})/.exec(e.d || ''); return m ? m[1] + '年' + (+m[2]) + '月' : '日付なし'; }
+  // レビュー検索の連載タグ：題名から連載名を見分ける（連載を足すときはここに1行）
+  var SERIES = [['帰ってきたアニメの門', /帰ってきたアニメの門/], ['四代目アニメの門', /四代目\s*アニメの門/]];
+  function series(e) { if (IV) return ''; for (var i = 0; i < SERIES.length; i++) if (SERIES[i][1].test(e.t || '')) return SERIES[i][0]; return ''; }
   function row(e) {
-    var tags = (e.w || []).slice(0, Math.min(6, e.wt == null ? 6 : e.wt)).map(function (w) { var x = works[w]; return x ? '<a class="tg tw" data-q="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' : ''; }).join('') +
+    var sr = series(e);
+    var tags = (sr ? '<a class="tg ts" data-q="' + esc(sr) + '">' + esc(sr) + '</a>' : '') + (e.w || []).slice(0, Math.min(6, e.wt == null ? 6 : e.wt)).map(function (w) { var x = works[w]; return x ? '<a class="tg tw" data-q="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' : ''; }).join('') +
       (e.p || []).filter(function (p) { return norm(e.t).indexOf(norm(p)) >= 0; }).map(function (p) { return '<a class="tg tp" data-q="' + esc(p) + '">' + esc(p) + '</a>'; }).join('');
     var ic = eicon(e);
     var meta = IV ? (e.a || '') : e.s + (e.a ? '／' + e.a : '');
@@ -104,8 +108,8 @@
       var tw = (e.w || []).slice(0, e.wt == null ? 10 : e.wt).map(function (w) { return works[w] ? works[w][0] : ''; });
       var tp = (e.p || []).filter(function (p) { return norm(e.t).indexOf(norm(p)) >= 0; });
       e._ti = norm(e.t);
-      e._tg = norm([e.t, e.s, e.a, tw.join(' '), tp.join(' ')].join(' '));
-      e._t = norm([e.t, e.s, e.a, (e.w || []).map(function (w) { return works[w] ? works[w][0] : ''; }).join(' '), (e.p || []).join(' ')].join(' '));
+      e._tg = norm([e.t, e.s, e.a, series(e), tw.join(' '), tp.join(' ')].join(' '));
+      e._t = norm([e.t, e.s, e.a, series(e), (e.w || []).map(function (w) { return works[w] ? works[w][0] : ''; }).join(' '), (e.p || []).join(' ')].join(' '));
     });
     var q = new URLSearchParams(location.search).get('q'); if (q) $('q').value = q;
     search();
