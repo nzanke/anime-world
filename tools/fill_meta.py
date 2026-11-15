@@ -43,6 +43,13 @@ def parse(raw, url):
     site = m.get('og:site_name', '')
     t = m.get('og:title') or (re.search(r'dc:title="([^"]+)"', raw) or [None, ''])[1] or p.title
     t = html.unescape(t).strip()
+    if not site:   # サイト名の情報がないとき：題名の最後の「 | 名前」が URL のドメインの名前なら、それをサイト名とみなす
+        # （インターネットアーカイブの URL は、元のサイトのドメインを見る。例：…/http://bonet.info/… の「 | bonet」）
+        orig = re.sub(r'^https?://web\.archive\.org/web/[^/]+/', '', url)
+        dom = re.sub(r'^https?://(www\.)?', '', orig).split('/')[0].lower()
+        mm = re.search(r'\s+[|｜]\s+([^|｜]{2,30})$', t)
+        if mm and re.sub(r'[\s.\-]', '', mm.group(1).lower()) in dom.replace('.', '').replace('-', ''):
+            site = mm.group(1).strip()
     if site:
         t = re.sub(r'\s*[:：|｜\-－]\s*' + re.escape(site) + r'\s*$', '', t)
         t = re.sub(r'\s+[|｜\-－]\s+[^|｜]*' + re.escape(site) + r'[^|｜]*$', '', t)   # 「題名 - エンタメを…｢J:magazine!｣」のように説明付きで後ろに付く場合
