@@ -26,7 +26,8 @@
   }
   function group(e) { var m = /^(\d{4})-(\d{2})/.exec(e.d || ''); return m ? m[1] + '年' + (+m[2]) + '月' : '日付なし'; }
   // レビュー検索の連載タグ：題名から連載名を見分ける（連載を足すときはここに1行）
-  var SERIES = [['帰ってきたアニメの門', /帰ってきたアニメの門/], ['四代目アニメの門', /四代目\s*アニメの門/]];
+  var SERIES = [['帰ってきたアニメの門', /帰ってきたアニメの門/], ['四代目アニメの門', /四代目\s*アニメの門/], ['アニメの門V', /アニメの門\s*V/],
+    ['高瀬司のアニメ時評宣言', /アニメ時評宣言/]];
   function series(e) { if (IV) return ''; for (var i = 0; i < SERIES.length; i++) if (SERIES[i][1].test(e.t || '')) return SERIES[i][0]; return ''; }
   function row(e) {
     var sr = series(e);
