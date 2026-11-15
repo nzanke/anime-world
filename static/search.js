@@ -26,8 +26,10 @@
   }
   function group(e) { var m = /^(\d{4})-(\d{2})/.exec(e.d || ''); return m ? m[1] + '年' + (+m[2]) + '月' : '日付なし'; }
   // レビュー検索の連載タグ：題名から連載名を見分ける（連載を足すときはここに1行）
-  var SERIES = [['帰ってきたアニメの門', /帰ってきたアニメの門/], ['四代目アニメの門', /四代目\s*アニメの門/], ['アニメの門V', /アニメの門\s*V/],
-    ['高瀬司のアニメ時評宣言', /アニメ時評宣言/]];
+  // ［連載名, 題名で見分ける形, 書き手（選択パネルの段）］
+  var SERIES = [['帰ってきたアニメの門', /帰ってきたアニメの門/, '藤津亮太'], ['四代目アニメの門', /四代目\s*アニメの門/, '藤津亮太'], ['アニメの門V', /アニメの門\s*V/, '藤津亮太'],
+    ['高瀬司のアニメ時評宣言', /アニメ時評宣言/, '高瀬司']];
+  var NOSER = '連載以外';
   function series(e) { if (IV) return ''; for (var i = 0; i < SERIES.length; i++) if (SERIES[i][1].test(e.t || '')) return SERIES[i][0]; return ''; }
   function row(e) {
     var sr = series(e);
@@ -61,29 +63,43 @@
       names.map(function (k) { return '<button type="button" data-c="' + esc(k) + '" style="--h:' + phue(k) + '"' + (sel === k ? ' class="on"' : '') + '>' + esc(k) + '<span class="n"> ' + n[k].toLocaleString() + '</span></button>'; }).join('');
   }
   // 媒体の選択パネル：ジャンルごとの行に、媒体を小さな札で横に並べる（縦に長くしない）。何も選ばなければすべて
+  // 選択パネル：インタビュー検索は媒体（段はジャンル）、レビュー検索は連載（段は書き手）
+  var PK = IV ? 'media-pick' : 'series-pick';
+  function pkey(e) { return IV ? site(e) : (series(e) || NOSER); }
   var pick = {};
-  try { (JSON.parse(localStorage.getItem('media-pick') || '[]')).forEach(function (x) { pick[x] = 1; }); } catch (x) {}
+  try { (JSON.parse(localStorage.getItem(PK) || '[]')).forEach(function (x) { pick[x] = 1; }); } catch (x) {}
   function picked() { return Object.keys(pick); }
   function mlabel() {
     var p = picked();
-    $('mbtn').textContent = '媒体：' + (!p.length ? 'すべて' : p.length === 1 ? p[0] : p.length + 'つ') + ' ▾';
+    $('mbtn').textContent = (IV ? '媒体：' : '連載：') + (!p.length ? 'すべて' : p.length === 1 ? p[0] : p.length + 'つ') + ' ▾';
     $('mbtn').classList.toggle('on', p.length > 0);
   }
+  function mgroups(n) {   // ［段の名前, 色, その段の選択肢］
+    if (!IV) {
+      var gs = [];
+      SERIES.forEach(function (x) { if (!n[x[0]]) return; var g = gs.filter(function (y) { return y[0] === x[2]; })[0]; if (!g) gs.push(g = [x[2], 25, []]); g[2].push(x[0]); });
+      if (n[NOSER]) gs.push(['その他', 70, [NOSER]]);
+      return gs;
+    }
+    return (window.GENRES || []).map(function (g) {
+      return [g[0], g[1], Object.keys(SG).concat(Object.keys(n)).filter(function (x, i, a) { return a.indexOf(x) === i && (SG[x] || ['カルチャー・その他'])[0] === g[0] && n[x]; })
+        .sort(function (a, b) { return n[b] - n[a]; })];
+    });
+  }
   function mpanel(base) {
-    var n = {}; base.forEach(function (e) { n[site(e)] = (n[site(e)] || 0) + 1; });
+    var n = {}; base.forEach(function (e) { var k = pkey(e); n[k] = (n[k] || 0) + 1; });
     var html = '<div class="mtop"><button type="button" data-a="all">すべて選ぶ</button><button type="button" data-a="none">選ぶのをやめる（すべて）</button><button type="button" data-a="close" class="mx" aria-label="閉じる">×</button></div>';
-    (window.GENRES || []).forEach(function (g) {
-      var ss = Object.keys(SG).concat(Object.keys(n)).filter(function (x, i, a) { return a.indexOf(x) === i && (SG[x] || ['カルチャー・その他'])[0] === g[0] && n[x]; })
-        .sort(function (a, b) { return n[b] - n[a]; });
+    mgroups(n).forEach(function (g) {
+      var ss = g[2];
       if (!ss.length) return;
-      html += '<div class="mrow"><button type="button" class="mg" data-g="' + esc(g[0]) + '" style="--h:' + g[1] + '" title="このジャンルをまとめて選ぶ・外す">' + esc(g[0]) + '</button><div class="mchips">' +
+      html += '<div class="mrow"><button type="button" class="mg" data-g="' + esc(g[0]) + '" style="--h:' + g[1] + '" title="' + (IV ? 'このジャンル' : 'この書き手の連載') + 'をまとめて選ぶ・外す">' + esc(g[0]) + '</button><div class="mchips">' +
         ss.map(function (x) {
           return '<button type="button" class="mc' + (pick[x] ? ' on' : '') + '" data-s="' + esc(x) + '" style="--h:' + g[1] + '">' + esc(x) + '<span class="n">' + n[x].toLocaleString() + '</span></button>';
         }).join('') + '</div></div>';
     });
     $('mpop').innerHTML = html;
   }
-  function msave() { try { localStorage.setItem('media-pick', JSON.stringify(picked())); } catch (x) {} }
+  function msave() { try { localStorage.setItem(PK, JSON.stringify(picked())); } catch (x) {} }
   function search() {
     var terms = $('q').value.split(/\s+/).map(norm).filter(Boolean);
     var cast = !$('cast') || $('cast').checked;   // キャスト（声優）のインタビューを出すか
@@ -92,9 +108,9 @@
     try { localStorage.setItem('search-scope', scope); } catch (x) {}
     var F = scope === 'title' ? '_ti' : scope === 'all' ? '_t' : '_tg';
     var base = all.filter(function (e) { return (cast || !e.c) && terms.every(function (t) { return e[F].indexOf(t) >= 0; }); });
-    var p = IV ? picked() : [];
-    if (IV) { mlabel(); if (!$('mpop').hidden) mpanel(base); lastBase = base; }
-    var base2 = base.filter(function (e) { return !p.length || pick[site(e)]; });
+    var p = $('mbtn') ? picked() : [];
+    if ($('mbtn')) { mlabel(); if (!$('mpop').hidden) mpanel(base); lastBase = base; }
+    var base2 = base.filter(function (e) { return !p.length || pick[pkey(e)]; });
     if ($('seg')) pills(base2);
     res = base2.filter(function (e) { return !sel || key(e) === sel; });
     if ($('old').checked) res = res.slice().reverse();

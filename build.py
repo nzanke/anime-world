@@ -416,7 +416,7 @@ def search_page(path, mode, h1, lead, ph):
         icons, legend, castopt = [], '', ''
     page(path, h1 if path != 'index.html' else CONF['サイト名'], f'''<h1>{esc(h1)}</h1>
 <p class="lead">{esc(lead)} {legend}</p>
-<div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus>{'<div class="mpick"><button type="button" id="mbtn" aria-haspopup="true" aria-expanded="false">媒体：すべて ▾</button><div id="mpop" class="mpop" hidden></div></div>' if mode == 'interview' else ''}</div>
+<div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus><div class="mpick"><button type="button" id="mbtn" aria-haspopup="true" aria-expanded="false">{'媒体' if mode == 'interview' else '連載'}：すべて ▾</button><div id="mpop" class="mpop" hidden></div></div></div>
 <div class="opts scope"><span class="lb">探す範囲</span><label><input type="radio" name="scope" value="title"> 題名だけ</label><label><input type="radio" name="scope" value="tag" checked> 題名とタグ</label><label><input type="radio" name="scope" value="all"> 本文に出てくる作品・人まで</label></div>
 <div class="opts"><label><input type="checkbox" id="old"> 古い順</label>{castopt}</div>
 <p class="count" id="count"></p>
