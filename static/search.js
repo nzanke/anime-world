@@ -183,7 +183,7 @@
 
   // ---------------------------------------------------------------- タグの編集（鍵を入れたブラウザだけ）
   // 保存先：content/tag_edits.json（{URL: {"w": [作品番号], "p": [人の名前]}}）。公開のときに索引に反映される
-  var TN = null, TNW = [], TNP = [], TNX = [], ed = null;
+  var TN = null, TNW = [], TNP = [], TNX = [], ed = null, LAST = null;   // LAST：自分が最後に保存した版
   function kana(s) { return norm(s).replace(/[\u30a1-\u30f6]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0x60); }); }   // カタカナ→ひらがな
   function loadNames() {
     if (TN) return TN;
@@ -270,15 +270,26 @@
     var e = ed.e, nw = ed.w.slice(), np = ed.p.slice(), nx = ed.x.slice();
     var api = 'https://api.github.com/repos/nzanke/anime-world/contents/content/tag_edits.json', H = { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/vnd.github+json' };
     $('tedm').textContent = '保存しています…';
-    // 毎回キャッシュを使わず最新版を読み、版がぶつかったら（409）読み直して最大3回やり直す
+    // GitHub は書き込み直後の約1分、読むと古い版を返す。自分の保存で返ってきた版（LAST）を覚えて次の保存に使い、
+    // 409（よそで書き換えられた）のときだけ読み直して、間を空けながら最大5回やり直す
+    function read() {
+      if (LAST) return Promise.resolve(LAST);
+      return fetch(api + '?ref=main&t=' + Date.now(), { headers: H, cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('読み込み ' + r.status); return r.json(); })
+        .then(function (j) { return { sha: j.sha, cur: JSON.parse(b64dec(j.content) || '{}') }; });
+    }
     function put(n) {
-      return fetch(api + '?ref=main&t=' + Date.now(), { headers: H, cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('読み込み ' + r.status); return r.json(); }).then(function (j) {
-        var cur = JSON.parse(b64dec(j.content) || '{}'); cur[e.u] = { w: nw, p: np }; if (nx.length) cur[e.u].x = nx;
+      var cur;
+      return read().then(function (L) {
+        cur = JSON.parse(JSON.stringify(L.cur)); cur[e.u] = { w: nw, p: np }; if (nx.length) cur[e.u].x = nx;
         var body = JSON.stringify(cur, null, 1) + '\n', who = { name: 'nzanke', email: 'nzanke@users.noreply.github.com' };
-        return fetch(api, { method: 'PUT', headers: H, cache: 'no-store', body: JSON.stringify({ message: 'タグを編集：' + e.t.slice(0, 40), content: b64enc(body), sha: j.sha, branch: 'main', committer: who, author: who }) });
+        return fetch(api, { method: 'PUT', headers: H, cache: 'no-store', body: JSON.stringify({ message: 'タグを編集：' + e.t.slice(0, 40), content: b64enc(body), sha: L.sha, branch: 'main', committer: who, author: who }) });
       }).then(function (r) {
-        if ((r.status === 409 || r.status === 422) && n < 3) return new Promise(function (ok) { setTimeout(ok, 1500 * (n + 1)); }).then(function () { return put(n + 1); });
-        return r;
+        if ((r.status === 409 || r.status === 422) && n < 5) {
+          LAST = null; $('tedm').textContent = '保存しています…（やり直し ' + (n + 1) + '回目）';
+          return new Promise(function (ok) { setTimeout(ok, [3, 6, 12, 20, 30][n] * 1000); }).then(function () { return put(n + 1); });
+        }
+        if (!r.ok) return r;
+        return r.json().then(function (j) { LAST = { sha: j.content.sha, cur: cur }; return { ok: true }; });
       });
     }
     put(0).then(function (r) {
