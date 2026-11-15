@@ -375,7 +375,7 @@ for l in all_links:
          'k': l.get('種類') or 'インタビュー', 'w': [l['work']] if l['work'] else [], 'p': []}
     if l.get('筆者'): e['a'] = l['筆者']
     auto.append(e)
-# コラム欄（レビュー・感想・評論・資料）から外す記事：content/コラム除外.txt の URL（インタビューはそのまま）
+# レビュー検索（column.html）から外す記事：content/コラム除外.txt の URL（インタビューはそのまま）
 _cx = D('content', 'コラム除外.txt')
 COLUMN_EXCLUDE = {l.strip() for l in open(_cx, encoding='utf-8') if l.strip() and not l.startswith('#')} if os.path.exists(_cx) else set()
 auto = [e for e in auto if not ((e.get('k') or 'インタビュー') != 'インタビュー' and e.get('u') in COLUMN_EXCLUDE)]
@@ -410,7 +410,7 @@ def search_page(path, mode, h1, lead, ph):
         legend = '／'.join(f'<span class="ic" style="--h:{h}">　</span>{esc(g)}' for g, h in GENRES)
         icons = []
         castopt = '<label><input type="checkbox" id="cast" checked> キャスト（声優）のインタビューも出す（<span class="sq">声</span>の印）</label>'
-    else:   # コラム欄は種類（評論・感想・資料）で分けない
+    else:   # レビュー検索は種類（評論・感想・資料）で分けない
         icons, legend, castopt = [], '', ''
     page(path, h1 if path != 'index.html' else CONF['サイト名'], f'''<h1>{esc(h1)}</h1>
 <p class="lead">{esc(lead)} {legend}</p>
@@ -496,7 +496,7 @@ for w in episodes:
 shutil.copy(D('static', 'add.js'), OUT)
 page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1>
 <section class="add bulk">
-<h2>まとめて追加（コラム欄）</h2>
+<h2>まとめて追加（レビュー検索）</h2>
 <label>記事のURL（1行に1つ）<textarea id="b-urls" rows="8" placeholder="https://…&#10;https://…"></textarea></label>
 <p class="hint">題名・日付・媒体は、公開のときにページから自動で入ります。もう入っているURLと、同じURLの重複は除きます。番組とは結び付けません。</p>
 <p class="go-row"><button id="b-push" class="btn big">まとめて追加して公開</button>　<span id="b-count" class="warn"></span></p>

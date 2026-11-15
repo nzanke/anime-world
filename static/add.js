@@ -89,7 +89,7 @@ $('push').addEventListener('click',function(){
   }).then(function(r){if(!r.ok)throw new Error('書き込み '+r.status);$('msg').textContent='追加しました。1〜2分でサイトに出ます。'})
   .catch(function(e){$('msg').textContent='できませんでした：'+e.message})});
 
-// まとめて追加（コラム欄）：URLを1行に1つ。番組なし、題名・日付などは公開のときに自動で入る
+// まとめて追加（レビュー検索）：URLを1行に1つ。番組なし、題名・日付などは公開のときに自動で入る
 function bulkUrls(){var seen={};return $('b-urls').value.split(/\s+/).map(function(u){return u.trim()}).filter(function(u){
   if(!/^https?:\/\/\S+$/.test(u)||seen[u])return false;seen[u]=1;return true})}
 function bulkCount(){var n=bulkUrls().length;$('b-count').textContent=n?n+'件':''}
@@ -101,10 +101,10 @@ $('b-push').addEventListener('click',function(){
   $('b-msg').textContent='追加しています…';
   fetch(api+'?ref=main',{headers:H}).then(function(r){if(!r.ok)throw new Error('読み込み '+r.status);return r.json()}).then(function(j){
     var cur=b64dec(j.content), have={};cur.split('\n').forEach(function(l){var m=/https?:\/\/[^,"\s]+/.exec(l);if(m)have[m[0]]=1});
-    us.forEach(function(u){if(have[u])dup++;else add.push(['','',kindOf(u),'','','','',u,'','','コラム'].map(q).join(','))});
+    us.forEach(function(u){if(have[u])dup++;else add.push(['','',kindOf(u),'','','','',u,'','','レビュー'].map(q).join(','))});
     if(!add.length)throw new Error('どれももう入っています');
     var next=cur.replace(/\s*$/,'')+'\n'+add.join('\n')+'\n';
     return fetch(api,{method:'PUT',headers:H,body:JSON.stringify({message:'記事リンクをまとめて追加（'+add.length+'件）',content:b64enc(next),sha:j.sha,branch:'main',committer:{name:'nzanke',email:'nzanke@users.noreply.github.com'},author:{name:'nzanke',email:'nzanke@users.noreply.github.com'}})})
-  }).then(function(r){if(!r.ok)throw new Error('書き込み '+r.status);$('b-msg').textContent=add.length+'件を追加しました'+(dup?'（'+dup+'件はもう入っていたので除きました）':'')+'。数分でコラム欄に出ます。';$('b-urls').value='';bulkCount()})
+  }).then(function(r){if(!r.ok)throw new Error('書き込み '+r.status);$('b-msg').textContent=add.length+'件を追加しました'+(dup?'（'+dup+'件はもう入っていたので除きました）':'')+'。数分でレビュー検索に出ます。';$('b-urls').value='';bulkCount()})
   .catch(function(e){$('b-msg').textContent='できませんでした：'+e.message})});
 })();
