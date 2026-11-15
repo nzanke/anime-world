@@ -553,8 +553,9 @@ page('add.html', '記事リンクの追加', '''<h1>記事リンクの追加</h1
 <details class="gh"><summary>URLで読めないサイトは、保存したHTMLから読み取る</summary><div id="drop" class="drop"><p>保存したHTMLをここに落とす　または　<label class="btn">ファイルを選ぶ<input id="file" type="file" accept=".html,.htm,.mhtml" hidden></label></p><p class="fname" id="fname"></p></div></details>
 <p class="go-row"><button id="push" class="btn big">追加して公開</button>　<span id="chk" class="warn"></span></p>
 <p id="msg" class="msg"></p>
-<div id="tokbox" class="tokbox" hidden><p>はじめにこのブラウザで一度だけ、GitHubの鍵（トークン）を貼ってください。以後は表示されません。</p>
-<label>トークン<input id="tok" type="password" autocomplete="off"></label></div>
+<div id="tokbox" class="tokbox" hidden><p>GitHubの鍵（トークン）を貼って「このブラウザに保存」を押してください。ブラウザがパスワードとして保存するか聞いてきたら、保存してください（ブラウザが鍵を消しても、次から自動で入ります）。</p>
+<form id="tokform" class="tokform"><input class="vh" type="text" name="username" autocomplete="username" value="anime-world" tabindex="-1" aria-hidden="true">
+<label>トークン<input id="tok" name="password" type="password" autocomplete="current-password"></label> <button type="submit" class="btn">このブラウザに保存</button></form></div>
 <p class="tokchange"><a href="#" id="tokedit">鍵を変える</a></p>
 <details class="gh"><summary>手で足す（links.csv に1行を貼る）</summary>
 <label>links.csv に足す1行<textarea id="line" rows="3" readonly></textarea></label>

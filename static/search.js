@@ -38,6 +38,8 @@
   function shownW(e) { return (e.w || []).slice(0, e.ed ? e.wt : Math.min(6, e.wt == null ? 6 : e.wt)); }
   function shownP(e) { return e.ed ? (e.pt || []) : (e.p || []).filter(function (p) { return norm(e.t).indexOf(norm(p)) >= 0; }); }
   var TOKEN = ''; try { TOKEN = localStorage.getItem('gh-token') || ''; } catch (x) {}
+  // 鉛筆ボタンは、鍵があるブラウザか、アドレスの最後に ?edit を付けたときだけ出す（ふつうの訪問者には見せない）
+  var EDIT = !!TOKEN || /[?&]edit\b/.test(location.search);
   function row(e) {
     var sr = series(e);
     var tags = (sr ? '<a class="tg ts" data-q="' + esc(sr) + '">' + esc(sr) + '</a>' : '') + shownW(e).map(function (w) { var x = works[w]; return x ? '<a class="tg tw" data-q="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' : ''; }).join('') +
@@ -47,7 +49,7 @@
     return '<li class="ur sr"><span class="ud">' + day(e) + '</span>' +
       '<span class="ic" style="--h:' + ic[1] + '" title="' + esc(IV ? e.s : e.k) + '">' + esc(ic[0]) + '</span>' +
       '<span class="sb"><a class="un" href="' + esc(e.u) + '" target="_blank" rel="noopener">' + esc(e.t) + '</a>' +
-      (TOKEN ? '<button type="button" class="ed" data-u="' + esc(e.u) + '" title="タグを編集" aria-label="タグを編集">✎</button>' : '') +
+      (EDIT ? '<button type="button" class="ed" data-u="' + esc(e.u) + '" title="タグを編集" aria-label="タグを編集">✎</button>' : '') +
       (e.c && IV ? '<span class="sq" title="キャスト（声優）のインタビュー">声</span>' : '') +
       (tags ? '<span class="tags">' + tags + '</span>' : '') + '</span>' +
       (meta ? '<span class="st">' + esc(meta) + '</span>' : '') + '</li>';
@@ -209,6 +211,8 @@
       (ed.w.length || ed.p.length ? '' : '<span class="hint">タグはありません</span>') + '</div>' +
       '<input id="tedq" type="search" autocomplete="off" placeholder="作品名・人の名前の一部を入れて足す">' +
       '<ul id="teds" class="teds"></ul>' +
+      (TOKEN ? '' : '<form class="tokf" id="tedtf"><input class="vh" type="text" name="username" autocomplete="username" value="anime-world" tabindex="-1" aria-hidden="true">' +
+        '<label>GitHubの鍵（トークン）<input id="tedtok" name="password" type="password" autocomplete="current-password" placeholder="パスワード管理から自動で入ります"></label></form>') +
       '<div class="tedf"><span id="tedm" class="msg"></span><button type="button" class="btn" data-a="close">やめる</button><button type="button" class="btn big" data-a="save">保存</button></div>';
     var inp = $('tedq'); inp.focus();
     inp.addEventListener('input', edSug); inp.addEventListener('keydown', function (ev) {
@@ -224,6 +228,7 @@
                             : '<li data-p="' + esc(x.t) + '"><span class="tk tkp">人</span>' + esc(x.t) + '</li>';
     }).join('') || (q ? '<li class="hint">候補がありません</li>' : '');
   }
+  document.addEventListener('submit', function (ev) { if (ev.target && ev.target.id === 'tedtf') ev.preventDefault(); });
   function edOpen(u) {
     var e = all.filter(function (x) { return x.u === u; })[0]; if (!e) return;
     ed = { e: e, w: shownW(e).slice(), p: shownP(e).slice() };
@@ -245,6 +250,12 @@
   function b64dec(s) { var b = atob(s.replace(/\n/g, '')), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return new TextDecoder().decode(a); }
   function b64enc(s) { var a = new TextEncoder().encode(s), b = ''; for (var i = 0; i < a.length; i++) b += String.fromCharCode(a[i]); return btoa(b); }
   function edSave() {
+    if (!TOKEN) {   // 鍵がまだない（ブラウザが消した）とき：パネルの欄に入れてもらい、パスワードとして保存してもらう
+      var tv = ($('tedtok') || {}).value; tv = (tv || '').trim();
+      if (!tv) { $('tedm').textContent = '下の欄に鍵を入れてください'; $('tedtok').focus(); return; }
+      TOKEN = tv; try { localStorage.setItem('gh-token', tv); } catch (x) {}
+      var f = $('tedtf'); if (f && f.requestSubmit) f.requestSubmit();   // ブラウザに「パスワードを保存」を出させる
+    }
     var e = ed.e, nw = ed.w.slice(), np = ed.p.slice();
     var api = 'https://api.github.com/repos/nzanke/anime-world/contents/content/tag_edits.json', H = { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/vnd.github+json' };
     $('tedm').textContent = '保存しています…';

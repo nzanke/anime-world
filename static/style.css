@@ -227,3 +227,7 @@ h2.add-one{margin-top:8px}
 @media (max-width:600px){.ted{top:auto;bottom:10px;left:3vw;right:3vw;transform:none;width:auto;max-height:80vh}}
 @media (prefers-color-scheme:dark){.teds li:hover,.teds li:first-child{background:hsl(210 20% 22%)}.tk{background:hsl(210 25% 25%);color:hsl(210 50% 82%)}.tk.tkp{background:hsl(150 20% 22%);color:hsl(150 40% 78%)}}
 .tk,.teds li i,.teds li small{flex-shrink:0;white-space:nowrap}
+
+/* 鍵の欄：パスワード管理のための名前の欄は見せない */
+.vh{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.tokf{margin-top:10px}.tokf label{display:block;font-size:13px;color:var(--muted)}.tokf input[type=password]{width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;box-sizing:border-box;margin-top:4px;background:var(--bg);color:var(--fg)}

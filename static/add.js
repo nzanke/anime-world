@@ -72,7 +72,10 @@ $('copy').addEventListener('click',function(){navigator.clipboard.writeText($('l
 // GitHub に直接追加（任意）
 try{$('tok').value=localStorage.getItem('gh-token')||''}catch(e){}
 function tokUI(){var has=!!$('tok').value.trim();$('tokbox').hidden=has;$('tokedit').parentNode.hidden=!has}
-$('tok').addEventListener('change',function(){try{localStorage.setItem('gh-token',this.value.trim())}catch(e){}tokUI()});
+// 鍵の欄はパスワードの欄として作ってある（ブラウザのパスワード管理に保存でき、ブラウザが保存領域を消しても自動で入る）
+function tokSave(){var v=$('tok').value.trim();if(!v)return;try{localStorage.setItem('gh-token',v)}catch(e){}tokUI()}
+$('tok').addEventListener('change',tokSave);
+$('tokform').addEventListener('submit',function(e){e.preventDefault();tokSave()});
 $('tokedit').addEventListener('click',function(e){e.preventDefault();$('tokbox').hidden=false;this.parentNode.hidden=true;$('tok').focus()});
 tokUI();
 function b64dec(s){var b=atob(s.replace(/\n/g,'')),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new TextDecoder().decode(a)}
