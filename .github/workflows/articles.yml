@@ -48,6 +48,7 @@ jobs:
         run: |
           python3 tools/db/prepare_db.py > /dev/null
           python3 articles/tag.py /tmp/articles.json
+          git rev-parse HEAD > /tmp/db_sha
           git checkout -- data/db/anime_credits.sqlite
       - name: 索引をこのサイトに置く（サイトの組み立てが動くよう、DB_TOKEN で押す）
         env:
@@ -64,6 +65,15 @@ jobs:
           new,old=n('/tmp/articles.json'),n('data/articles.json')
           print('新しい索引',new,'件／公開中',old,'件')
           sys.exit(1 if new<old*0.9 else 0)"
+          # 同時に動いたほかの回が、この回の索引づくりのあとに記事を保存していたら、最新の記事データで索引を作り直す（古い索引で上書きしないように）
+          for i in 1 2 3; do
+            git -C /tmp/db fetch -q --depth 1 origin main
+            [ "$(git -C /tmp/db rev-parse FETCH_HEAD)" = "$(cat /tmp/db_sha)" ] && break
+            echo "記事データが更新されていたので、索引を作り直します"
+            git -C /tmp/db reset -q --hard FETCH_HEAD
+            (cd /tmp/db && python3 tools/db/prepare_db.py > /dev/null && python3 articles/tag.py /tmp/articles.json && git checkout -- data/db/anime_credits.sqlite)
+            git -C /tmp/db rev-parse HEAD > /tmp/db_sha
+          done
           cp /tmp/articles.json data/articles.json
           cp /tmp/films.tsv data/films.tsv
           git add data/articles.json data/films.tsv
