@@ -382,15 +382,46 @@ _cx = D('content', 'コラム除外.txt')
 COLUMN_EXCLUDE = {l.strip() for l in open(_cx, encoding='utf-8') if l.strip() and not l.startswith('#')} if os.path.exists(_cx) else set()
 auto = [e for e in auto if not ((e.get('k') or 'インタビュー') != 'インタビュー' and e.get('u') in COLUMN_EXCLUDE)]
 auto.sort(key=lambda e: e.get('d') or '0000', reverse=True)
+# 手で直したタグ（content/tag_edits.json。検索ページの鉛筆ボタンから保存）：{URL: {"w": [作品番号], "p": [人の名前]}}
+# 一覧に出すタグをこの内容に置き換える。外したタグは「本文まで探す」の範囲からも外す
+_te = D('content', 'tag_edits.json')
+TAG_EDITS = json.load(open(_te, encoding='utf-8')) if os.path.exists(_te) else {}
+for e in auto:
+    ov = TAG_EDITS.get(e.get('u'))
+    if not ov: continue
+    shown_w = e.get('w', [])[:e['wt'] if e.get('wt') is not None else 6]
+    shown_p = [p for p in e.get('p', []) if p and p in e.get('t', '')]
+    gone_w = set(shown_w) - set(ov.get('w', [])); gone_p = set(shown_p) - set(ov.get('p', []))
+    e['w'] = ov.get('w', []) + [w for w in e.get('w', []) if w not in ov.get('w', []) and w not in gone_w]
+    e['wt'] = len(ov.get('w', []))
+    e['p'] = ov.get('p', []) + [p for p in e.get('p', []) if p not in ov.get('p', []) and p not in gone_p]
+    e['pt'] = ov.get('p', []); e['ed'] = 1
 used_w = {w for e in auto for w in e.get('w', [])}
-films = {}   # 記事に出てくる映画（anime-database の tag.py が書き出す）
-if os.path.exists(D('data', 'films.tsv')):
-    for r in csv.DictReader(open(D('data', 'films.tsv'), encoding='utf-8'), delimiter='\t'): films[r['work_id']] = [r['title'], r['year']]
+films = {}   # 映画：記事に出てくるもの（anime-database の tag.py が書き出す）と、映画台帳の全作品（タグの候補用）
+for fn in ('films_all.tsv', 'films.tsv'):
+    if os.path.exists(D('data', fn)):
+        for r in csv.DictReader(open(D('data', fn), encoding='utf-8'), delimiter='\t'): films[r['work_id']] = [r['title'], r['year']]
 index = {'items': auto, 'works': {w: ([works[w]['title'], year_of(w) or ''] if w in works else films[w]) for w in used_w if w in works or w in films}}
 with open(os.path.join(OUT, 'index.json'), 'w', encoding='utf-8') as f:
     json.dump(index, f, ensure_ascii=False, separators=(',', ':'))
 IDX_V = hashlib.sha1(json.dumps(index, ensure_ascii=False).encode('utf-8')).hexdigest()[:8]
 art_count = Counter(p for e in auto for p in e.get('p', []))
+# タグ編集の予測変換の候補：全作品（番組・映画）と人（スタッフの台帳と記事に出てきた名前）。記事の多いものを先に
+w_count = Counter(w for e in auto for w in e.get('w', []))
+_names = {p for p in set(p_staff) | set(art_count) if p and 2 <= len(p) <= 20 and not re.search(r'[「」『』（）()]', p)}   # クレジット表記そのままのもの（「〜」より など）は外す
+_by2 = defaultdict(list)
+for p in _names: _by2[p[:2]].append(p)
+t_count = Counter()   # 記事の題名に名前が出てくる回数（映画の監督など、テレビのスタッフに少ない人も上に来るように）
+for e in auto:
+    t = e.get('t', ''); hit = set()
+    for i in range(len(t) - 1):
+        for p in _by2.get(t[i:i + 2], ()):
+            if t.startswith(p, i): hit.add(p)
+    t_count.update(hit)
+tagnames = {'w': sorted([[w, works[w]['title'], year_of(w) or '', w_count[w]] for w in works] + [[w, t[0], t[1], w_count[w]] for w, t in films.items()], key=lambda x: -x[3]),
+            'p': sorted([[p, art_count[p] + t_count[p] * 3 + len(p_staff.get(p, {}))] for p in _names], key=lambda x: -x[1])}
+with open(os.path.join(OUT, 'tagnames.json'), 'w', encoding='utf-8') as f:
+    json.dump(tagnames, f, ensure_ascii=False, separators=(',', ':'))
 
 # ---------------------------------------------------------------- 記事検索（インタビュー＝トップ、コラム＝別ページ）
 IS_IV = lambda e: (e.get('k') or 'インタビュー') == 'インタビュー'

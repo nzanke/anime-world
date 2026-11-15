@@ -204,3 +204,26 @@ h2.add-one{margin-top:8px}
 .tg.ts{color:hsl(25 60% 32%);background:hsl(25 80% 94%);box-shadow:none}
 .tg.ts:hover{background:hsl(25 80% 88%)}
 @media (prefers-color-scheme:dark){.tg.ts{color:hsl(25 80% 80%);background:hsl(25 30% 22%)}.tg.ts:hover{background:hsl(25 30% 30%)}}
+
+/* タグの編集（鍵を入れたブラウザだけ）：題名の右端の鉛筆ボタンと編集パネル */
+.ed{border:0;background:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;margin-left:4px;vertical-align:baseline;opacity:.55}
+.ed:hover{opacity:1;color:var(--fg)}
+.ted{position:fixed;left:50%;top:12vh;transform:translateX(-50%);width:min(560px,94vw);max-height:76vh;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.22);padding:14px 16px;z-index:50}
+.tedh{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}.tedt{flex:1;font-size:13px;color:var(--muted);line-height:1.5}
+.tedh .mx{border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:var(--muted)}
+.tedc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tedc .tg{font-size:12.5px;padding:2px 4px 2px 10px;cursor:default;color:var(--fg)}
+.tedc .tg small{margin-left:4px;color:var(--muted)}
+.tedc .tg button{border:0;background:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 4px}
+.tedc .tg button:hover{color:var(--fg)}
+#tedq{width:100%;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);box-sizing:border-box}
+.teds{list-style:none;margin:4px 0 0;padding:0;border-radius:8px}
+.teds li{padding:7px 10px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:6px}
+.teds li:hover,.teds li:first-child{background:hsl(210 60% 96%)}
+.teds li small{color:var(--muted)}.teds li i{margin-left:auto;font-style:normal;font-size:11px;color:var(--muted)}
+.teds li.hint{cursor:default;color:var(--muted);background:none}
+.tk{font-size:10.5px;padding:0 6px;border-radius:999px;background:hsl(210 50% 92%);color:hsl(210 50% 30%)}.tk.tkp{background:hsl(150 40% 90%);color:hsl(150 40% 26%)}
+.tedf{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px}.tedf .msg{flex:1;font-size:12.5px;color:var(--muted)}
+@media (max-width:600px){.ted{top:auto;bottom:10px;left:3vw;right:3vw;transform:none;width:auto;max-height:80vh}}
+@media (prefers-color-scheme:dark){.teds li:hover,.teds li:first-child{background:hsl(210 20% 22%)}.tk{background:hsl(210 25% 25%);color:hsl(210 50% 82%)}.tk.tkp{background:hsl(150 20% 22%);color:hsl(150 40% 78%)}}
+.tk,.teds li i,.teds li small{flex-shrink:0;white-space:nowrap}
