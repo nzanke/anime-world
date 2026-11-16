@@ -4,7 +4,10 @@ on:
     inputs:
       titles:
         description: '作品名を | で区切って入れる'
-        required: true
+        required: false
+      script:
+        description: '動かすスクリプト（ndl_volumes.py／ndl_probe.py／ndl_harvest.py）と引数'
+        required: false
 permissions:
   contents: read
 jobs:
@@ -21,10 +24,17 @@ jobs:
       - name: 調べる
         env:
           TITLES: ${{ inputs.titles }}
+          SCRIPT: ${{ inputs.script }}
         run: |
-          python3 tools/manga/ndl_volumes.py "$TITLES" manga_volumes.json | tee summary.md
-          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p out
+          if [ -n "$SCRIPT" ]; then
+            eval "python3 tools/manga/$SCRIPT" | tee summary.md
+          else
+            python3 tools/manga/ndl_volumes.py "$TITLES" out/manga_volumes.json | tee summary.md
+          fi
+          tail -c 60000 summary.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: manga_volumes
-          path: manga_volumes.json
+          path: out/
