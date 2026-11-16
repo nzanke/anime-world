@@ -82,6 +82,7 @@ for r in src:
 # ---- 国会図書館（土台） ----
 rows, seen = [], set()
 labpair = defaultdict(lambda: defaultdict(int))
+rejected = []
 stat = {"ndl": 0, "day": 0, "vol": 0, "hk_add": 0, "adult": 0}
 for line in gzip.open(NDL, "rt", encoding="utf-8"):
     d = json.loads(line)
@@ -91,13 +92,17 @@ for line in gzip.open(NDL, "rt", encoding="utf-8"):
         continue
     seen.add(isbn)
     t = nf(d["タイトル"])
-    t = re.sub(r"[.．]?\s*(?:Volume|VOLUME|Vol\.?|VOL\.?|vol\.?|第|巻|その|#)\s*(\d+)\s*(?:巻|集|話)?$", r" \1", t)
+    t = re.sub(r"[.．]?\s*(?:Volume|VOLUME|Vol\.?|VOL\.?|vol\.?|第|巻之|巻|その|#)\s*(\d+)\s*(?:巻|集|話)?$", r" \1", t)
+    t = re.sub(r"\s(?:Game|GAME|Stage|STAGE|Round|ROUND|Lesson|LESSON|Track|TRACK)\s*(\d+)$", r". \1", t)
     t = re.sub(r"\s+\d{4}-[A-Za-z]+\s+volume\s*(\d+)$", r". No.\1", t, flags=re.I)
     nm = re.search(r"[.．]?\s*(?:感謝の)?No\.\s*(\d+)$", t)
     t = re.sub(r"\s*第[0-9A-Za-z]+号$", "", t)
     t = re.sub(r"[.．]\s*(?:volume|episode|ep\.?|letter|act|sp|part|chapter|story)\s*0*(\d+)$", r" \1", t, flags=re.I)
     t = re.sub(r"[.．]\s*0*(\d+)\s*巻$", r" \1", t)
     vm = re.search(r"(?:[.．]\s*|\s+)(\d+|上|中|下|前編|後編)$", t)
+    if vm and " = " in t and not re.search(r"[.．]\s*(\d+|上|中|下|前編|後編)$", t) and vm.group(1).isdigit() and int(vm.group(1)) >= 10 and re.search(r"(?<!\d)" + vm.group(1) + r"(?!\d)", t.split(" = ")[0]):
+        vm = None  # 並列タイトルの英文の中の数字（「40歳…= …turned 40」など、日本語の書名にもある数字）は巻数ではない
+        rejected.append(t)
     if vm and re.fullmatch(r"(19|20)\d\d", vm.group(1)):
         vm = None  # 「2026」などの年号は巻数ではない
     vol = vm.group(1) if vm else ""
@@ -114,6 +119,8 @@ for line in gzip.open(NDL, "rt", encoding="utf-8"):
         stat["day"] += 1
         if not vol and h["vol"] and not re.fullmatch(r"(19|20)\d\d", h["vol"]):
             vol = h["vol"]; stat["vol"] += 1
+            if re.search(r"(?<!\d)" + re.escape(vol) + r"$", name):
+                name = name[:-len(vol)].rstrip(" .．")
         if h["lab"] and lab:
             labpair[(pub_norm(d["出版者"]), lab_norm(h["lab"]))][lab_norm(lab)] += 1
         lab = lab or h["lab"]
@@ -173,6 +180,8 @@ rows.sort(key=lambda x: (x[0], x[1] if x[1] > 0 else (99 if x[1] == 0 else 100),
 keys = {(key_of(x[4]), x[2]) for x in rows}
 def wkey(x):
     k = (key_of(x[4]), x[2])
+    if x[5]:
+        return k  # 巻数のある本（続編シリーズなど）は、元の作品にまとめない
     if ". " in x[4]:
         b = (key_of(x[4].split(". ")[0]), x[2])
         if b in keys:
@@ -227,6 +236,7 @@ for k, idx in works0.items():
     else:
         works[k] = idx
 print("レーベルごとに版を分けた作品", split_n)
+open("rejected.txt", "w", encoding="utf-8").write("\n".join(rejected))
 W = []
 for idx in works.values():
     num = [i for i in idx if vnum(rows[i][5]) is not None]
