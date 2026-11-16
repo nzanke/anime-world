@@ -1,0 +1,30 @@
+name: 漫画の最新巻を国会図書館サーチで調べる
+on:
+  workflow_dispatch:
+    inputs:
+      titles:
+        description: '作品名を | で区切って入れる'
+        required: true
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/manga
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 調べる
+        env:
+          TITLES: ${{ inputs.titles }}
+        run: |
+          python3 tools/manga/ndl_volumes.py "$TITLES" manga_volumes.json | tee summary.md
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manga_volumes
+          path: manga_volumes.json
