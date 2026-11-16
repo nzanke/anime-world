@@ -81,6 +81,7 @@ for r in src:
 
 # ---- 国会図書館（土台） ----
 rows, seen = [], set()
+labpair = defaultdict(lambda: defaultdict(int))
 stat = {"ndl": 0, "day": 0, "vol": 0, "hk_add": 0, "adult": 0}
 for line in gzip.open(NDL, "rt", encoding="utf-8"):
     d = json.loads(line)
@@ -113,13 +114,21 @@ for line in gzip.open(NDL, "rt", encoding="utf-8"):
         stat["day"] += 1
         if not vol and h["vol"] and not re.fullmatch(r"(19|20)\d\d", h["vol"]):
             vol = h["vol"]; stat["vol"] += 1
+        if h["lab"] and lab:
+            labpair[(pub_norm(d["出版者"]), lab_norm(h["lab"]))][lab_norm(lab)] += 1
         lab = lab or h["lab"]
     sp = 1 if SPECIAL.search(t + nf(d["版"])) else 0
     rows.append([ym, day, P(pub_norm(d["出版者"])), L(lab_norm(lab)), name, vol, auth, price, isbn, sp])
     stat["ndl"] += 1
 
 # ---- ほんのひきだしにしかない本を足す（成人向けは除く） ----
+labmap = {}
+for key, cand in labpair.items():
+    best, n = max(cand.items(), key=lambda kv: kv[1])
+    if n >= 3 and n / sum(cand.values()) >= 0.7:
+        labmap[key] = best
 for k, h in hk.items():
+    h["lab"] = labmap.get((h["pub"], lab_norm(h["lab"])), h["lab"])
     if h["isbn"] and h["isbn"] in seen:
         continue
     if h["adult"]:
@@ -135,6 +144,25 @@ for x in rows:
     if x[5].startswith("No.") and not MAG.search(LABS[x[3]]) and x[4] != "ハルタ":
         x[5] = str(int(x[5][3:]))
         x[4] = re.sub(r"[.．]?\s*File$", "", x[4]).strip()
+
+def labkey(l):
+    l = unicodedata.normalize("NFKD", nf(l)).encode("ascii", "ignore").decode() if re.fullmatch(r"[\x20-\x7eŌōŪū]+", nf(l)) else nf(l)
+    return re.sub(r"[\s・･.．,、=＝\-‐―~〜:：/／()（）「」『』]", "", l.lower())
+cnt = defaultdict(int)
+for x in rows:
+    cnt[(x[2], x[3])] += 1
+best = {}
+for (p_, li), c in cnt.items():
+    k = (p_, labkey(LABS[li]))
+    if LABS[li] and (k not in best or c > cnt[(p_, best[k])]):
+        best[k] = li
+merged = 0
+for x in rows:
+    if LABS[x[3]]:
+        b = best[(x[2], labkey(LABS[x[3]]))]
+        if b != x[3]:
+            x[3] = b; merged += 1
+print("レーベルの表記をそろえた", merged, "冊／ひきだしのレーベルを国会図書館の書き方に合わせた対応", len(labmap), "件")
 
 rows.sort(key=lambda x: (x[0], x[1] if x[1] > 0 else (99 if x[1] == 0 else 100), x[2], x[4]))
 
