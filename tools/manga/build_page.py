@@ -35,6 +35,9 @@ def key_of(t):
 
 
 def vnum(v):
+    m = re.fullmatch(r"No\.(\d+)", v)
+    if m:
+        return int(m.group(1))
     return {"上": 1, "中": 2, "下": 3, "前編": 1, "後編": 2}.get(v) or (int(v) if v.isdigit() else None)
 
 
@@ -65,9 +68,14 @@ for r in src:
     m = re.search(r"[（(]\s*(\d+|上|中|下|前編|後編)\s*[）)]\s*$", title)
     if m and re.fullmatch(r"(19|20)\d\d", m.group(1)):
         m = None
+    hname, hvol = (title[:m.start()].strip() if m else title), (m.group(1) if m else "")
+    hname = re.sub(r"\s*第[0-9A-Za-z]+号$", "", hname)
+    hv = re.search(r"\s+\d{4}-[A-Za-z]+\s+volume\s*(\d+)$", hname, re.I)
+    if hv:
+        hname, hvol = hname[:hv.start()].strip(), "No." + hv.group(1)
     hk.setdefault(r["ISBN"] or (r["年月"], title), {
         "ym": r["年月"], "day": int(d) if d.isdigit() else 0, "pub": pub_norm(r["出版社"]), "lab": lab,
-        "name": title[:m.start()].strip() if m else title, "vol": m.group(1) if m else "",
+        "name": hname, "vol": hvol,
         "auth": nf(r["著者"]), "price": nf(r["予価"]), "isbn": r["ISBN"],
         "sp": 1 if SPECIAL.search(title) else 0, "adult": "(成)" in title or "（成）" in r["書名"]})
 
@@ -82,7 +90,10 @@ for line in gzip.open(NDL, "rt", encoding="utf-8"):
         continue
     seen.add(isbn)
     t = nf(d["タイトル"])
-    t = re.sub(r"[.．]?\s*(?:Volume|VOLUME|Vol\.?|VOL\.?|vol\.?|No\.?|第|巻|その|#)\s*(\d+)\s*(?:巻|集|話)?$", r" \1", t)
+    t = re.sub(r"[.．]?\s*(?:Volume|VOLUME|Vol\.?|VOL\.?|vol\.?|第|巻|その|#)\s*(\d+)\s*(?:巻|集|話)?$", r" \1", t)
+    t = re.sub(r"\s+\d{4}-[A-Za-z]+\s+volume\s*(\d+)$", r". No.\1", t, flags=re.I)
+    nm = re.search(r"[.．]?\s*(?:感謝の)?No\.\s*(\d+)$", t)
+    t = re.sub(r"\s*第[0-9A-Za-z]+号$", "", t)
     t = re.sub(r"[.．]\s*(?:volume|episode|ep\.?|letter|act|sp|part|chapter|story)\s*0*(\d+)$", r" \1", t, flags=re.I)
     t = re.sub(r"[.．]\s*0*(\d+)\s*巻$", r" \1", t)
     vm = re.search(r"(?:[.．]\s*|\s+)(\d+|上|中|下|前編|後編)$", t)
@@ -90,6 +101,9 @@ for line in gzip.open(NDL, "rt", encoding="utf-8"):
         vm = None  # 「2026」などの年号は巻数ではない
     vol = vm.group(1) if vm else ""
     name = (t[:vm.start()] if vm else t).split(" = ")[0].split(" : ")[0].strip()
+    if nm:
+        vol = "No." + nm.group(1)
+        name = t[:nm.start()].split(" = ")[0].split(" : ")[0].strip()
     lab = re.sub(r"[\s.．]*\d+$", "", nf(d["シリーズタイトル"]).split(";")[0]).strip()
     auth = re.sub(r"\s*(著|作|画|漫画|原作|絵|編|原案|キャラクター原案|作画|ネーム|構成)(?=\s|$|,|;)", "", nf(d["責任表示"])).replace(";", "／").strip()
     ym, day, price = f"{m.group(1)}-{int(m.group(2)):02d}", -1, ""
@@ -117,9 +131,22 @@ for k, h in hk.items():
 rows.sort(key=lambda x: (x[0], x[1] if x[1] > 0 else (99 if x[1] == 0 else 100), x[2], x[4]))
 
 # ---- 作品ごとの最新巻（特装版も数える。表示は同じ巻の通常版を優先） ----
+keys = {(key_of(x[4]), x[2]) for x in rows}
+def wkey(x):
+    k = (key_of(x[4]), x[2])
+    if ". " in x[4]:
+        b = (key_of(x[4].split(". ")[0]), x[2])
+        if b in keys:
+            return b
+    mg = re.match(r"(.+?)\s+\S+号$", x[4])
+    if mg:
+        b = (key_of(mg.group(1)), x[2])
+        if b in keys:
+            return b
+    return k
 works = defaultdict(list)
 for i, x in enumerate(rows):
-    works[(key_of(x[4]), x[2])].append(i)
+    works[wkey(x)].append(i)
 W = []
 for idx in works.values():
     num = [i for i in idx if vnum(rows[i][5]) is not None]
