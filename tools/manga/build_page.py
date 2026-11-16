@@ -141,7 +141,7 @@ for k, h in hk.items():
 LABS = list(labs)
 MAG = re.compile(r"ぐる漫|にゃんcomi|^ハルタ$", re.I)
 for x in rows:
-    if x[5].startswith("No.") and not MAG.search(LABS[x[3]]) and x[4] != "ハルタ":
+    if x[5].startswith("No.") and not MAG.search(LABS[x[3]]) and x[4] not in ("ハルタ", "Sludge"):
         x[5] = str(int(x[5][3:]))
         x[4] = re.sub(r"[.．]?\s*File$", "", x[4]).strip()
 
