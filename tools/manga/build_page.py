@@ -128,6 +128,14 @@ for k, h in hk.items():
     rows.append([h["ym"], h["day"], P(h["pub"]), L(lab_norm(h["lab"])), h["name"], h["vol"], h["auth"], h["price"], h["isbn"], h["sp"]])
     stat["hk_add"] += 1
 
+# 「No.」を号数として扱うのは、アンソロジー・雑誌のレーベルだけ。ほかは巻数にする
+LABS = list(labs)
+MAG = re.compile(r"ぐる漫|にゃんcomi|^ハルタ$", re.I)
+for x in rows:
+    if x[5].startswith("No.") and not MAG.search(LABS[x[3]]) and x[4] != "ハルタ":
+        x[5] = str(int(x[5][3:]))
+        x[4] = re.sub(r"[.．]?\s*File$", "", x[4]).strip()
+
 rows.sort(key=lambda x: (x[0], x[1] if x[1] > 0 else (99 if x[1] == 0 else 100), x[2], x[4]))
 
 # ---- 作品ごとの最新巻（特装版も数える。表示は同じ巻の通常版を優先） ----
