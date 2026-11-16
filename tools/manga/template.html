@@ -160,7 +160,7 @@ function renderWorks(reset){
   $("meta").textContent = `${ws.length.toLocaleString()}作品`;
 }
 function note(){
-  return `<p class="note">出典：ほんのひきだし「コミック新刊発売日一覧／コミック新刊ラインアップ」（${months[months.length-1].replace("-","年")}月〜${months[0].replace("-","年")}月分、発売日順の記事）。予定の発売日・予価は記事掲載時点のものです。ほんのひきだしにない本は、国会図書館の全国書誌データ（分類 NDC 726.1、ISBNのあるもの、2024〜2026年）から足しています（発売日は年月まで）。2026年2月・3月の前半（1日〜15日）は、ほんのひきだしに記事がないため国会図書館の書誌で補っています。「作品ごとの最新巻」は、この期間に出た巻のうち最も大きい巻数で、期間より前に出た巻は数えていません。</p>`;
+  return `<p class="note">出典：国立国会図書館の全国書誌データ（分類 NDC 726.1、ISBNのあるもの、2024〜2026年）を土台に、ほんのひきだし「コミック新刊発売日一覧／コミック新刊ラインアップ」で発売日（日まで）・予価を補い、国会図書館にまだない本（発売前の新刊、国会図書館では特装版だけが載っている巻の通常版など。成人向けは除く）を足しています。「日付不明」の本は国会図書館の書誌だけにあるもので、発売日は年月までです。「作品ごとの最新巻」は、この期間に出た巻のうち最も大きい巻数（特装版も含めて数える）で、期間より前に出た巻は数えていません。</p>`;
 }
 function render(reset=true){ tab==="list" ? renderList(reset) : renderWorks(reset); }
 $("out").addEventListener("click", e => { if(e.target.classList.contains("more")) render(false); });
