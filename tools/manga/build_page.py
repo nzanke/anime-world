@@ -139,9 +139,12 @@ for k, h in hk.items():
 
 # 「No.」を号数として扱うのは、アンソロジー・雑誌のレーベルだけ。ほかは巻数にする
 LABS = list(labs)
+ISSUE_NAMES = ("ハルタ", "Sludge", "ちび本当にあった笑える話")  # 号数で数える雑誌・アンソロジー（No.の付かないものも含む）
 MAG = re.compile(r"ぐる漫|にゃんcomi|^ハルタ$", re.I)
 for x in rows:
-    if x[5].startswith("No.") and not MAG.search(LABS[x[3]]) and x[4] not in ("ハルタ", "Sludge"):
+    if x[4] in ISSUE_NAMES and x[5].isdigit():
+        x[5] = "No." + x[5]
+    if x[5].startswith("No.") and not MAG.search(LABS[x[3]]) and x[4] not in ISSUE_NAMES:
         x[5] = str(int(x[5][3:]))
         x[4] = re.sub(r"[.．]?\s*File$", "", x[4]).strip()
 
@@ -180,9 +183,50 @@ def wkey(x):
         if b in keys:
             return b
     return k
-works = defaultdict(list)
+works0 = defaultdict(list)
 for i, x in enumerate(rows):
-    works[wkey(x)].append(i)
+    works0[wkey(x)].append(i)
+# 同じ作品名でも、別の版（愛蔵版・新装版など、または1巻から出し直した版）はレーベルごとに分ける
+EDITION = re.compile(r"愛蔵|新装|完全版|文庫|ワイド|復刻|BILINGUAL|英語|大判|MY FIRST|プラチナ|総集編|BEST SELECTION|ベストセレクション|名作選|傑作選|豪華版|SPECIAL EDITION", re.I)
+def vint(v):
+    return int(v) if v.isdigit() else None
+works = {}
+split_n = 0
+for k, idx in works0.items():
+    bylab = defaultdict(list)
+    for i in idx:
+        bylab[rows[i][3]].append(i)
+    if len(bylab) == 1:
+        works[k] = idx
+        continue
+    sep = {l for l in bylab if EDITION.search(LABS[l])}
+    # 1巻から出し直した版：巻数の範囲が下で、出始めが後のレーベル
+    info = {}
+    for l, ii in bylab.items():
+        vs = [vint(rows[i][5]) for i in ii if not rows[i][9] and vint(rows[i][5])]
+        ds = [rows[i][0] for i in ii if not rows[i][9] and vint(rows[i][5])]
+        if len(vs) >= 2:
+            info[l] = (min(vs), max(vs), min(ds))
+    for a_ in info:
+        for b_ in info:
+            if a_ != b_ and info[a_][1] < info[b_][0] - 3 and info[a_][2] > info[b_][2]:
+                sep.add(a_)
+    if sep and len(sep) < len(bylab):
+        split_n += 1
+        rest = []
+        for l, ii in bylab.items():
+            if l in sep:
+                works[k + (l,)] = ii
+            else:
+                rest += ii
+        works[k] = rest
+    elif sep:  # 全部が版違い（例：愛蔵版だけ2種類）なら、それぞれ分ける
+        split_n += 1
+        for l, ii in bylab.items():
+            works[k + (l,)] = ii
+    else:
+        works[k] = idx
+print("レーベルごとに版を分けた作品", split_n)
 W = []
 for idx in works.values():
     num = [i for i in idx if vnum(rows[i][5]) is not None]
