@@ -28,14 +28,15 @@ def vol_number(vol, title):
 
 
 def fetch(title):
-    q = urllib.parse.urlencode({"title": title, "mediatype": "1", "cnt": "500"})
+    q = urllib.parse.urlencode({"title": title, "cnt": "500"})
     req = urllib.request.Request(f"{API}?{q}", headers={"User-Agent": "anime-world manga volume check"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return r.read()
 
 
 def check(title):
-    root = ET.fromstring(fetch(title))
+    raw = fetch(title)
+    root = ET.fromstring(raw)
     rows = []
     for it in root.iter("item"):
         t = norm(it.findtext("dc:title", "", NS) or it.findtext("title", ""))
@@ -68,6 +69,10 @@ def check(title):
     vols = sorted(by_n)
     latest = by_n[vols[-1]] if vols else None
     missing = [i for i in range(1, vols[-1] + 1) if i not in by_n] if vols else []
+    if not rows:
+        print("応答の先頭:", raw[:800].decode("utf-8", "replace"), file=sys.stderr)
+    elif not vols:
+        print("先頭3件:", json.dumps(rows[:3], ensure_ascii=False), file=sys.stderr)
     return {"query": title, "records": len(rows), "volumes_found": len(vols),
             "latest": latest, "missing": missing[:50]}
 
