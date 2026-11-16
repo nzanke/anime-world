@@ -28,7 +28,9 @@ def lab_norm(l):
 
 
 def key_of(t):
-    t = re.sub(r"\([^)]{1,15}\)", "", nf(t))
+    t = re.sub(r"[（(]仮[）)]", "", nf(t))
+    t = re.sub(r"^コミック\s+", "", t)
+    t = re.sub(r"\([^)]{1,15}\)", "", t)
     return re.sub(r"[\s・･:=\-‐―ー~〜!?.,、。「」『』()\[\]【】★☆♡♥'\"]", "", nf(t).lower())
 
 
@@ -80,7 +82,9 @@ for line in gzip.open(NDL, "rt", encoding="utf-8"):
         continue
     seen.add(isbn)
     t = nf(d["タイトル"])
-    t = re.sub(r"[.．]?\s*(?:Volume|VOLUME|Vol\.?|VOL\.?|vol\.?|第)\s*(\d+)\s*巻?$", r" \1", t)
+    t = re.sub(r"[.．]?\s*(?:Volume|VOLUME|Vol\.?|VOL\.?|vol\.?|No\.?|第|巻|その|#)\s*(\d+)\s*(?:巻|集|話)?$", r" \1", t)
+    t = re.sub(r"[.．]\s*(?:volume|episode|ep\.?|letter|act|sp|part|chapter|story)\s*0*(\d+)$", r" \1", t, flags=re.I)
+    t = re.sub(r"[.．]\s*0*(\d+)\s*巻$", r" \1", t)
     vm = re.search(r"(?:[.．]\s*|\s+)(\d+|上|中|下|前編|後編)$", t)
     if vm and re.fullmatch(r"(19|20)\d\d", vm.group(1)):
         vm = None  # 「2026」などの年号は巻数ではない
