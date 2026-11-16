@@ -78,13 +78,10 @@ with gzip.open(f"{outdir}/ndl_comics.jsonl.gz", "wt", encoding="utf-8") as out:
                     d["month"] = ym
                     out.write(json.dumps(d, ensure_ascii=False) + "\n")
                     n_all += 1
-                    if n_all <= 3:
-                        print("見本", json.dumps(d, ensure_ascii=False), flush=True)
                 got += len(recs)
                 time.sleep(2)
-                nxt = re.search(r"<nextRecordPosition>(\d+)", x)
-                if not recs or not nxt or got >= total:
+                if not recs or got >= total:
                     break
-                s = int(nxt.group(1))
+                s += len(recs)
             print(f"{ym} {cond}: {total}件中 {got}件取得（重複を除いた累計 {n_all}）", flush=True)
 print("合計", n_all)
