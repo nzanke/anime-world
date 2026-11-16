@@ -12,7 +12,7 @@ NS = {"dc": "http://purl.org/dc/elements/1.1/", "dcndl": "http://ndl.go.jp/dcndl
       "dcterms": "http://purl.org/dc/terms/", "xsi": "http://www.w3.org/2001/XMLSchema-instance",
       "openSearch": "http://a9.com/-/spec/opensearchrss/1.0/"}
 OUT = "data/manga/ndl"
-PACE = float(os.environ.get("PACE", "6"))
+PACE = float(os.environ.get("PACE", "15"))
 stats = {"req": 0, "429": 0}
 
 
@@ -67,18 +67,24 @@ def harvest_month(ym):
         for d in items(root):
             got[d["id"] or (d["title"], d["volume"], d["isbn"])] = d
         return total, got, 0
-    queue = [f"978-4-{d}" for d in range(10)] + ["979-"]
-    queries = 1
-    while queue:
-        p = queue.pop(0)
-        r = fetch({**base, "isbn": p, "cnt": "500"}); queries += 1
+    q = [0]
+
+    def take(p):
+        """p で始まるISBNを全部取る。500件を超えたら1桁足して分ける。数字で分けきれない分（番号の区切り）だけハイフン付きで取る。"""
+        r = fetch({**base, "isbn": p, "cnt": "500"}); q[0] += 1
         n = total_of(r)
-        if n > 500:
-            queue = [p + str(d) for d in range(10)] + [p + "-" + str(d) for d in range(10)] + queue
-            continue
-        for d in items(r):
-            got[d["id"] or (d["title"], d["volume"], d["isbn"])] = d
-    return total, got, queries
+        if n <= 500:
+            for d in items(r):
+                got[d["id"] or (d["title"], d["volume"], d["isbn"])] = d
+            return n
+        s = sum(take(p + str(d)) for d in range(10))
+        if s < n and not p.endswith("-"):
+            s += take(p + "-")
+        return s
+
+    for p in [f"978-4-{d}" for d in range(10)] + ["979-"]:
+        take(p)
+    return total, got, q[0]
 
 
 def main():
