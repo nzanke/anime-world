@@ -58,7 +58,7 @@ def parse(rec):
 
 seen = set()
 n_all = 0
-with gzip.open(f"{outdir}/ndl_comics.jsonl.gz", "wt", encoding="utf-8") as out:
+with gzip.open(f"{outdir}/ndl_comics_{start}_{end}.jsonl.gz", "wt", encoding="utf-8") as out:
     for ym in months(start, end):
         for cond in ('ndc="726.1"', 'ndlc="Y84"'):
             q = f'{cond} AND from="{ym}" AND until="{ym}" AND dpid="iss-ndl-opac"'
