@@ -31,9 +31,10 @@
     ['アニメの門V', /アニメの門\s*V|藤津亮太のアニメの門\s*第\d/, '藤津亮太'],   // 「藤津亮太のアニメの門 第◯回」は公式の誤表記で、アニメの門V
     ['高瀬司のアニメ時評宣言', /アニメ時評宣言/, '高瀬司'],
     ['前Qの「いいアニメを見に行こう」', /いいアニメを見に(?:行|い)こう/, '前田久'],
-    ['氷川竜介の「アニメに歴史あり」', /アニメに歴史あり/, '氷川竜介']];
+    ['氷川竜介の「アニメに歴史あり」', /アニメに歴史あり/, '氷川竜介'],
+    ['週末批評', null, '週末批評', '週末批評']];   // 4つ目があるものは題名ではなく媒体（サイト）単位でまとめる。選ぶボタンでは筆者の代わりにサイト名で束ねる
   var NOSER = '連載以外';
-  function series(e) { if (IV) return ''; for (var i = 0; i < SERIES.length; i++) if (SERIES[i][1].test(e.t || '')) return SERIES[i][0]; return ''; }
+  function series(e) { if (IV) return ''; for (var i = 0; i < SERIES.length; i++) if (SERIES[i][3] ? e.s === SERIES[i][3] : SERIES[i][1].test(e.t || '')) return SERIES[i][0]; return ''; }
   // 一覧に出すタグ：作品は題名に関係するもの（最大6つ）、人は題名に出てくる人。手で直した記事（e.ed）はその内容をそのまま
   function shownW(e) { return (e.w || []).slice(0, e.ed ? e.wt : Math.min(6, e.wt == null ? 6 : e.wt)); }
   function shownP(e) { return e.ed ? (e.pt || []) : (e.p || []).filter(function (p) { return norm(e.t).indexOf(norm(p)) >= 0; }); }
