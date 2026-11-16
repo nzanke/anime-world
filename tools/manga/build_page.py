@@ -61,6 +61,8 @@ for r in src:
                 break
     d = nf(r["日"]).split("/")[-1]
     m = re.search(r"[（(]\s*(\d+|上|中|下|前編|後編)\s*[）)]\s*$", title)
+    if m and re.fullmatch(r"(19|20)\d\d", m.group(1)):
+        m = None
     hk.setdefault(r["ISBN"] or (r["年月"], title), {
         "ym": r["年月"], "day": int(d) if d.isdigit() else 0, "pub": pub_norm(r["出版社"]), "lab": lab,
         "name": title[:m.start()].strip() if m else title, "vol": m.group(1) if m else "",
@@ -80,6 +82,8 @@ for line in gzip.open(NDL, "rt", encoding="utf-8"):
     t = nf(d["タイトル"])
     t = re.sub(r"[.．]?\s*(?:Volume|VOLUME|Vol\.?|VOL\.?|vol\.?|第)\s*(\d+)\s*巻?$", r" \1", t)
     vm = re.search(r"(?:[.．]\s*|\s+)(\d+|上|中|下|前編|後編)$", t)
+    if vm and re.fullmatch(r"(19|20)\d\d", vm.group(1)):
+        vm = None  # 「2026」などの年号は巻数ではない
     vol = vm.group(1) if vm else ""
     name = (t[:vm.start()] if vm else t).split(" = ")[0].split(" : ")[0].strip()
     lab = re.sub(r"[\s.．]*\d+$", "", nf(d["シリーズタイトル"]).split(";")[0]).strip()
@@ -89,7 +93,7 @@ for line in gzip.open(NDL, "rt", encoding="utf-8"):
     if h:
         ym, day, price = h["ym"], h["day"], h["price"]
         stat["day"] += 1
-        if not vol and h["vol"]:
+        if not vol and h["vol"] and not re.fullmatch(r"(19|20)\d\d", h["vol"]):
             vol = h["vol"]; stat["vol"] += 1
         lab = lab or h["lab"]
     sp = 1 if SPECIAL.search(t + nf(d["版"])) else 0
