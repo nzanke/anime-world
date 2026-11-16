@@ -1,0 +1,22 @@
+name: コミックの発売日一覧の補い
+on:
+  workflow_dispatch:
+    inputs:
+      args:
+        description: 'hikidashi_add.py の引数（記事番号）'
+        required: true
+permissions:
+  contents: write
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 tools/manga/hikidashi_add.py ${{ inputs.args }}
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/manga/hikidashi.csv
+          git commit -qm "ほんのひきだしの抜けていた一覧記事を補う [skip ci]" || true
+          for i in 1 2 3 4 5; do git pull -q --rebase && git push -q && break; sleep 10; done
