@@ -258,7 +258,7 @@ def page(path, title, body, crumbs=(), current=None, desc='', script='', head=''
 {body.replace('{R}', r)}
 </main>
 <footer class="site"><p>番組・スタッフ・各話の基礎データは日本語版ウィキペディアの各記事{src}をもとに加工したもので、<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja">CC BY-SA 4.0</a> で提供します（<a href="{r}about.html#data">出典と加工について</a>）。</p></footer>
-</div>{script}</body></html>
+</div>{script}<script data-goatcounter="https://nzanke.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script></body></html>
 '''
     dest = os.path.join(OUT, path)
     os.makedirs(os.path.dirname(dest), exist_ok=True)
