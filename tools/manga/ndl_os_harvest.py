@@ -12,7 +12,7 @@ NS = {"dc": "http://purl.org/dc/elements/1.1/", "dcndl": "http://ndl.go.jp/dcndl
       "dcterms": "http://purl.org/dc/terms/", "xsi": "http://www.w3.org/2001/XMLSchema-instance",
       "openSearch": "http://a9.com/-/spec/opensearchrss/1.0/"}
 OUT = "data/manga/ndl"
-PACE = float(os.environ.get("PACE", "15"))
+PACE = float(os.environ.get("PACE", "30"))
 stats = {"req": 0, "429": 0}
 
 
@@ -27,7 +27,7 @@ def months(a, b):
 
 def fetch(params):
     url = API + "?" + urllib.parse.urlencode(params)
-    for wait in (0, 30, 60, 120, 240, 480, 600):
+    for wait in (0, 300, 600, 900, 900, 900, 900, 900, 900):
         if wait:
             stats["429"] += 1
             print(f"    待つ {wait}秒", flush=True)
