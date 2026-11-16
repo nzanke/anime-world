@@ -19,29 +19,30 @@ def get(u):
 
 
 arts = {}
-q = urllib.parse.quote("コミック新刊発売日一覧")
-for page in range(1, 200):
-    try:
-        x = get(f"https://hon-hikidashi.jp/page/{page}/?s={q}" if page > 1 else f"https://hon-hikidashi.jp/?s={q}")
-    except Exception:
-        break
-    found = re.findall(r'href="(https://hon-hikidashi\.jp/news/\d+/)"[^>]*>\s*(?:<[^>]+>\s*)*([^<]*発売日一覧[^<]*)', x)
-    if "検索結果" not in x:
-        break
-    oldest = "9999-99"
-    for y, mo in re.findall(r"(\d{4})年(\d{1,2})月\d{1,2}日：本日発売", x):
-        oldest = min(oldest, f"{y}-{int(mo):02d}")
-    for u, t in found:
-        m = re.search(r"(\d{4})年(\d+)月発売", t)
-        if not m:
-            continue
-        ym = f"{m.group(1)}-{int(m.group(2)):02d}"
-        oldest = min(oldest, ym)
-        if a <= ym <= b and "発売日順" in t:
-            arts[u] = (ym, html.unescape(t).strip())
-    print(f"検索{page}ページ目：いちばん古い月 {oldest}（対象の記事 累計{len(arts)}本）", flush=True)
-    if oldest < a:
-        break
+for word in ("コミック新刊発売日一覧", "コミック新刊ラインアップ"):
+  q = urllib.parse.quote(word)
+  for page in range(1, 200):
+      try:
+          x = get(f"https://hon-hikidashi.jp/page/{page}/?s={q}" if page > 1 else f"https://hon-hikidashi.jp/?s={q}")
+      except Exception:
+          break
+      found = re.findall(r'href="(https://hon-hikidashi\.jp/news/\d+/)"[^>]*>\s*(?:<[^>]+>\s*)*([^<]*(?:発売日一覧|ラインアップ)[^<]*)', x)
+      if "検索結果" not in x:
+          break
+      oldest = "9999-99"
+      for y, mo in re.findall(r"(\d{4})年(\d{1,2})月\d{1,2}日：本日発売", x):
+          oldest = min(oldest, f"{y}-{int(mo):02d}")
+      for u, t in found:
+          m = re.search(r"(\d{4})年(\d+)月発売", t)
+          if not m:
+              continue
+          ym = f"{m.group(1)}-{int(m.group(2)):02d}"
+          oldest = min(oldest, ym)
+          if a <= ym <= b and "発売日順" in t and "コミック" in t:
+              arts[u] = (ym, html.unescape(t).strip())
+      print(f"{word} 検索{page}ページ目：いちばん古い月 {oldest}（対象の記事 累計{len(arts)}本）", flush=True)
+      if oldest < a:
+          break
 
 rows = []
 cl = lambda s: html.unescape(re.sub(r"<[^>]+>", "", s)).strip()
