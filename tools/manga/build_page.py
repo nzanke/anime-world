@@ -6,6 +6,14 @@ nf = lambda s: unicodedata.normalize("NFKC", s or "").strip()
 SPECIAL = re.compile(r"特装版|限定版|同梱版|特別版|プレミアム版|DVD付|Blu-ray付|小冊子付|フィギュア付|グッズ付")
 
 
+def pub_norm(p):
+    p = nf(p)
+    if "発行/" in p:
+        p = p.split("発行/")[0]
+    p = re.sub(r"^(株式会社|\(株\))|株式会社$", "", p)
+    return re.sub(r"\s+", "", p).strip()
+
+
 def key_of(t):
     return re.sub(r"[\s・･:=\-‐―ー~〜!?.,、。「」『』()\[\]【】★☆♡♥'\"]", "", nf(t).lower())
 
@@ -38,28 +46,37 @@ for r in src:
     m = re.search(r"[（(]\s*(\d+|上|中|下|前編|後編)\s*[）)]\s*$", title)
     vol = m.group(1) if m else ""
     name = title[:m.start()].strip() if m else title
-    p = nf(r["出版社"])
+    p = pub_norm(r["出版社"])
     rows.append([r["年月"], day, pubs.setdefault(p, len(pubs)), labs.setdefault(lab, len(labs)), name, vol,
                  nf(r["著者"]), nf(r["予価"]), r["ISBN"], 1 if SPECIAL.search(title) else 0])
 
-# 国会図書館の書誌から、ほんのひきだしにない本を足す（発売日は年月まで → 日は -1）
-import glob, gzip
+# 国会図書館の書誌（全国書誌データ検索のTSV、2024〜2026年）から、ほんのひきだしにない本を足す（発売日は年月まで → 日は -1）
+import gzip
 hk_isbn = {x[8] for x in rows if x[8]}
 ndl_add = 0
-for path in sorted(glob.glob("/home/claude/anime-world/data/manga/ndl/*.jsonl.gz")):
-    for line in gzip.open(path, "rt", encoding="utf-8"):
-        d = json.loads(line)
-        isbn = d["isbn"].replace("-", "")
-        if not isbn or isbn in hk_isbn:
-            continue
-        hk_isbn.add(isbn)
-        name = nf(d["title"]).split(" : ")[0].split(" = ")[0].strip()
-        lab = nf(d["series"]).split(";")[0].split(". ")[0].strip()
-        cr = re.sub(r",\s*", "", re.sub(r",\s*\d{4}-(\d{4})?", "", nf(d["creator"])))
-        p = nf(d["publisher"])
-        rows.append([d["month"], -1, pubs.setdefault(p, len(pubs)), labs.setdefault(lab, len(labs)), name, nf(d["volume"]),
-                     cr, "", isbn, 1 if SPECIAL.search(d["title"] + d["volume"]) else 0])
-        ndl_add += 1
+for line in gzip.open("/home/claude/anime-world/data/manga/ndl_tsv.jsonl.gz", "rt", encoding="utf-8"):
+    d = json.loads(line)
+    isbn = d["ISBN"].replace("-", "").split(";")[0].strip()
+    if not isbn or isbn in hk_isbn:
+        continue
+    m = re.match(r"(\d{4})\.(\d{1,2})", d["出版年月日等"])
+    if not m:
+        continue
+    hk_isbn.add(isbn)
+    t = nf(d["タイトル"])
+    t = re.sub(r"[.．]?\s*(?:Volume|VOLUME|Vol\.?|VOL\.?|vol\.?|第)\s*(\d+)\s*巻?$", r" \1", t)
+    vm = re.search(r"(?:[.．]\s*|\s+)(\d+|上|中|下|前編|後編)$", t)
+    vol = vm.group(1) if vm else ""
+    name = t[:vm.start()].strip() if vm else t
+    name = name.split(" = ")[0].split(" : ")[0].strip()
+    lab = nf(d["シリーズタイトル"]).split(";")[0].strip()
+    lab = re.sub(r"[\s.．]*\d+$", "", lab).strip()
+    cr = re.sub(r"\s*(著|作|画|漫画|原作|絵|編|原案|キャラクター原案|作画|ネーム)(?=\s|$|,|;)", "", nf(d["責任表示"])).replace(";", "／").strip()
+    p = pub_norm(d["出版者"])
+    sp = 1 if SPECIAL.search(t + nf(d["版"])) or re.search(r"限定|特装|付き|付録", nf(d["版"])) else 0
+    rows.append([f"{m.group(1)}-{int(m.group(2)):02d}", -1, pubs.setdefault(p, len(pubs)), labs.setdefault(lab, len(labs)), name, vol,
+                 cr, "", isbn, sp])
+    ndl_add += 1
 print("国会図書館から足した", ndl_add, "冊")
 
 # 同じISBNの重複を除く
