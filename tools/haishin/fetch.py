@@ -48,8 +48,9 @@ cy, cq = cour_of(now)
 cours = [(cy, cq)]
 py, pq = (cy, cq - 1) if cq > 1 else (cy - 1, 4)
 cours.insert(0, (py, pq))                      # 前のクールから続く作品（2クール目など）
-if now.month % 3 == 0 and now.day >= 10:      # クール替わりの前は次のクールも
-    cours.append((cy, cq + 1) if cq < 4 else (cy + 1, 1))
+ny, nq = (cy, cq + 1) if cq < 4 else (cy + 1, 1)
+if (dt.datetime(ny, nq * 3 - 2, 1, tzinfo=JST) - now).days <= 60:   # 次のクールまで2か月を切ったら、次のクールの新番組も
+    cours.append((ny, nq))
 SEASON = {1: 'winter', 2: 'spring', 3: 'summer', 4: 'autumn'}
 
 # dアニメストア
@@ -102,6 +103,17 @@ if pg:
     try: tids |= set(re.findall(r'<TID>(\d+)</TID>', get(f'https://cal.syoboi.jp/db.php?Command=ProgLookup&Range={a2}-{b2}').decode('utf-8')))
     except Exception: pass
     tids = sorted(tids, key=int)
+    # 今期〜次のクールに始まる作品（番組表にまだ入っていない新番組も）
+    first = {(y, (q - 1) * 3 + m) for y, q in cours[1:] for m in (1, 2, 3)}
+    try:
+        lu = (now - dt.timedelta(days=150)).strftime('%Y%m%d_000000')
+        allt = get(f'https://cal.syoboi.jp/db.php?Command=TitleLookup&TID=*&LastUpdate={lu}-', timeout=90).decode('utf-8')
+        new_tids = [g['TID'] for g in (dict(re.findall(r'<(\w+)>(.*?)</\1>', it, re.S)) for it in re.findall(r'<TitleItem\b.*?</TitleItem>', allt, re.S))
+                    if g.get('Cat') in ('1', '10') and (int(g.get('FirstYear') or 0), int(g.get('FirstMonth') or 0)) in first]
+        tids = sorted(set(tids) | set(new_tids), key=int)
+        log.append(f'syoboi 今期・次期に始まる作品\t{len(new_tids)}')
+    except Exception as e:
+        log.append(f'syoboi 新番組\tFAIL {e}')
     parts = []
     for i in range(0, len(tids), 50):
         b = get(f'https://cal.syoboi.jp/db.php?Command=TitleLookup&TID={",".join(tids[i:i+50])}')
@@ -140,6 +152,14 @@ if pg:
         time.sleep(0.3)
     json.dump(wiki, open(os.path.join(OUT, 'wiki.json'), 'w', encoding='utf-8'), ensure_ascii=False)
     log.append(f'wiki.json\t配信表のある記事{ok}')
+
+    # 公式サイトの放送・配信情報のページ（いちばん早く発表される取り先）
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import official
+    urls = official_urls = official.official_urls('\n'.join(parts))
+    off = official.fetch_all(urls)
+    json.dump(off, open(os.path.join(OUT, 'official.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+    log.append(f'official.json\t公式サイト{len(urls)}・取得できた{sum(1 for v in off.values() if v["pages"])}')
 
 open(os.path.join(OUT, '_log.txt'), 'w', encoding='utf-8').write(now.isoformat() + '\n' + '\n'.join(log) + '\n')
 print('\n'.join(log))
