@@ -1,7 +1,7 @@
 /* アニメレビュー保管庫：Febri・アキバ総研 記事アーカイブ索引と同じ作り（白地・細い罫線・ゴシック・控えめな色） */
-:root{--fg:#1a1a1a;--muted:#6b6b6b;--line:#e3e3e3;--accent:#1f4f8a;--bg:#fff;--pale:#f6f7f8;
-  --sans:"BIZ UDPGothic","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif}
-@media (prefers-color-scheme:dark){:root{--fg:#e8e8e8;--muted:#9a9a9a;--line:#333;--accent:#7fb0ff;--bg:#141414;--pale:#1d1d1d}}
+:root{--fg:#1a1a1a;--muted:#6b6b6b;--line:#e3e3e3;--accent:#b4232c;--bg:#fff;--pale:#f6f7f8;
+  --sans:"BIZ UDGothic","BIZ UDPGothic","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif}
+@media (prefers-color-scheme:dark){:root{--fg:#e8e8e8;--muted:#9a9a9a;--line:#333;--accent:#ff6b72;--bg:#141414;--pale:#1d1d1d}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.6;-webkit-text-size-adjust:100%}
 a{color:var(--accent)}
@@ -27,7 +27,7 @@ ul.list li{display:flex;gap:16px;padding:9px 0;border-bottom:1px solid var(--lin
 .title a{color:var(--fg);text-decoration:none}
 .title a:hover{color:var(--accent);text-decoration:underline}
 /* 種類のバッジ：OKLCHで明度・彩度をそろえ、色相だけを変える */
-.cat{--h:250;font-size:11px;font-weight:600;letter-spacing:.02em;padding:1px 8px;margin-left:8px;border-radius:999px;white-space:nowrap;
+.cat{--h:260;font-size:11px;font-weight:600;letter-spacing:.02em;padding:1px 8px;margin-left:8px;border-radius:999px;white-space:nowrap;
   color:oklch(0.46 0.12 var(--h));background:oklch(0.955 0.03 var(--h));box-shadow:inset 0 0 0 1px oklch(0.88 0.05 var(--h))}
 @media (prefers-color-scheme:dark){.cat{color:oklch(0.86 0.09 var(--h));background:oklch(0.30 0.05 var(--h));box-shadow:inset 0 0 0 1px oklch(0.40 0.07 var(--h))}}
 .writer{font-size:12px;color:var(--muted);margin-left:8px;white-space:nowrap}
@@ -236,3 +236,28 @@ h2.add-one{margin-top:8px}
 .tg.tx{color:hsl(280 40% 35%);background:hsl(280 60% 96%);box-shadow:none}.tg.tx:hover{background:hsl(280 60% 91%)}
 .tk.tkx{background:hsl(280 50% 92%);color:hsl(280 40% 32%)}.teds li.new{color:var(--muted)}
 @media (prefers-color-scheme:dark){.tg.tx{color:hsl(280 60% 82%);background:hsl(280 20% 24%)}.tk.tkx{background:hsl(280 20% 26%);color:hsl(280 50% 84%)}}
+
+/* デザインの統一（2026-11）：サイト名の見出し・件数の行の「？」・目次 */
+.wrap{padding-top:12px}
+h1.site{font-size:20px;margin:18px 0 0}h1.site a{color:var(--fg);text-decoration:none}
+.nav{margin:0}
+.cbar{position:relative;display:flex;align-items:center;gap:12px;margin:20px 0 6px}
+.cbar .count{flex:1;margin:0;font-size:13px;color:var(--muted)}
+.about{margin-left:auto}
+.about summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap}
+.about summary::-webkit-details-marker{display:none}
+.about .qi{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.about[open] .qi,.about summary:hover .qi{color:var(--bg);background:var(--accent);border-color:var(--accent)}
+.aboutbox{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:30;background:var(--bg);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);padding:12px 14px;font-size:13px;color:var(--muted);max-height:70vh;overflow:auto;line-height:1.7}
+.aboutbox h3{font-size:13px;color:var(--fg);margin:12px 0 2px}.aboutbox h3:first-child{margin-top:0}
+.aboutbox p,.aboutbox ul{margin:0 0 6px}.aboutbox ul{padding-left:1.2em}
+.outbar.cbar .cbtn{margin-left:4px}
+.sr .cat{margin:0 6px 0 0;vertical-align:1px}
+.toc{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 12px}
+.toc .cat{margin:0;text-decoration:none}
+.tocb{margin-left:auto;display:flex;gap:10px}.tocb button{font:inherit;font-size:12px;background:none;border:0;padding:0;color:var(--accent);cursor:pointer}
+.opts.scope{margin-bottom:0}
+@media (max-width:600px){.wrap{padding:12px 20px 48px}}
+
+.sbar{flex-wrap:nowrap}.sbar input[type=search]{flex:1 1 0;min-width:0}
+.outbar.cbar{flex-wrap:wrap}.outbar.cbar .count{flex:1 1 calc(100% - 180px);min-width:0}.outbar.cbar .cbtn{order:3;margin-left:auto}

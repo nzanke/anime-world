@@ -11,6 +11,7 @@
   function hash(k) { var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 360; return h; }
   function icon(name) { var x = ICONS[name] || [name.slice(0, 1), hash(name)]; return x; }
   // レビュー検索は種類で分けない：媒体名の頭2文字・1色（媒体名がなければ「記」）
+  function nhue(t) { var h = 0; for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) % 360; return h; }
   function eicon(e) { if (!IV) { var sn = site(e); return [sn && sn !== 'その他' ? sn.slice(0, 2) : '記', 25]; } var g = SG[site(e)]; return [g ? g[1] : site(e).slice(0, 2), GH[genre(e)] || 150]; }
   function phue(k) { return IV ? (GH[k] || 150) : icon(k)[1]; }
   // インタビューは媒体のジャンルで絞り込み・色分けし、媒体は選択欄で選ぶ。レビューは種類で
@@ -21,7 +22,7 @@
   var key = function (e) { return IV ? genre(e) : (e.k === '評論' ? 'レビュー' : e.k); };   // 絞り込みのボタンの単位
   function day(e) {
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(e.d || '');
-    if (!m) return '<span class="dq">—</span>';
+    if (!m) return /^\d{4}-\d{2}/.test(e.d || '') ? '<span class="dq">頃</span>' : '<span class="dq">—</span>';   // 月までしかわからない日付は「頃」
     return +m[3] + '<small>' + WD[new Date(+m[1], +m[2] - 1, +m[3]).getDay()] + '</small>';
   }
   function group(e) { var m = /^(\d{4})-(\d{2})/.exec(e.d || ''); return m ? m[1] + '年' + (+m[2]) + '月' : '日付なし'; }
@@ -47,14 +48,15 @@
   var EDIT = !!TOKEN || /[?&]edit\b/.test(location.search);
   function row(e) {
     var sr = series(e);
+    if (sr && sr === site(e)) sr = '';   // 連載名が媒体名と同じ（個人ブログなど）ときは、札と重なるので連載のタグを出さない
     var tags = (sr ? '<a class="tg ts" data-q="' + esc(sr) + '">' + esc(sr) + '</a>' : '') + shownW(e).map(function (w) { var x = works[w]; return x ? '<a class="tg tw" data-q="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' : ''; }).join('') +
       shownP(e).map(function (p) { return '<a class="tg tp" data-q="' + esc(p) + '">' + esc(p) + '</a>'; }).join('') +
       (e.x || []).map(function (x) { return '<a class="tg tx" data-q="' + esc(x) + '">' + esc(x) + '</a>'; }).join('');
     var ic = eicon(e);
-    var meta = IV ? (e.a || '') : e.s + (e.a ? '／' + e.a : '');
+    var meta = e.a || '';   // 媒体は題名のあとの札に出す
     return '<li class="ur sr"><span class="ud">' + day(e) + '</span>' +
-      '<span class="ic" style="--h:' + ic[1] + '" title="' + esc(IV ? e.s : e.k) + '">' + esc(ic[0]) + '</span>' +
       '<span class="sb"><a class="un" href="' + esc(e.u) + '" target="_blank" rel="noopener">' + esc(e.t) + '</a>' +
+      '<span class="cat" style="--h:' + (IV ? ic[1] : nhue(site(e))) + '">' + esc(site(e) || 'その他') + '</span>' +
       (EDIT ? '<button type="button" class="ed" data-u="' + esc(e.u) + '" title="タグを編集" aria-label="タグを編集">✎</button>' : '') +
       (e.c && IV ? '<span class="sq" title="キャスト（声優）のインタビュー">声</span>' : '') +
       (tags ? '<span class="tags">' + tags + '</span>' : '') + '</span>' +

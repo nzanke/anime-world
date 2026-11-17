@@ -8,6 +8,7 @@
   content/about.md         「このサイトについて」の本文
   content/links.csv        関連記事のリンク（評論・インタビュー・記事。自分の評論も含む）
 """
+import urllib.parse
 import csv, gzip, hashlib, html, json, os, re, shutil, sys
 from collections import defaultdict, Counter
 
@@ -227,14 +228,20 @@ def render_body(text, r, hbase=4):
 
 # ---------------------------------------------------------------- ページの枠
 NEWS_SITE = 'https://nzanke.github.io/anime-news/'   # 制作決定ニュースは独立したサイトに移した（2026-11）
-NAV = [('index.html', 'インタビュー'), ('column.html', 'レビュー'), (NEWS_SITE, '制作決定'), ('tools.html', 'ツール集'), ('about.html', 'このサイトについて')]
+NAV = [('index.html', 'インタビュー'), ('column.html', 'レビュー'), (NEWS_SITE, '制作決定'), ('tools.html', 'ツール集')]   # 「このサイトについて」は各ページの「？」の箱へまとめた
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDMincho&family=BIZ+UDPMincho:wght@400;700&family=BIZ+UDPGothic:wght@400;700&display=swap">')
+         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">'
+         # 半角の数字・英字・記号は BIZ UDゴシック（「!」〜「~」だけを読み込む）
+         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap&text=' + urllib.parse.quote(''.join(map(chr, range(33, 127))), safe='') + '">')
+LEADS = {}   # ページごとの説明（「？」の箱の先頭に出す）。about.js に書き出す
+ABOUT_HTML = ('<details class="about"><summary><span class="qi">?</span>このサイトについて</summary>'
+              '<div class="aboutbox" id="aboutbox"></div></details>')
 
 # 書き換えたら古いものがブラウザに残らないよう、ファイルの中身から番号を付ける
 CSS_V = hashlib.sha1(open(D('static', 'style.css'), 'rb').read()).hexdigest()[:8]
 JS_V = hashlib.sha1(open(D('static', 'add.js'), 'rb').read()).hexdigest()[:8]
+ABOUT_V = hashlib.sha1(open(D('content', 'about.md'), 'rb').read() + open(__file__, 'rb').read()).hexdigest()[:8]
 SEARCH_V = hashlib.sha1(open(D('static', 'search.js'), 'rb').read()).hexdigest()[:8]
 
 def page(path, title, body, crumbs=(), current=None, desc='', script='', head=''):
@@ -246,6 +253,17 @@ def page(path, title, body, crumbs=(), current=None, desc='', script='', head=''
     if crumbs:
         cr = '<nav class="crumbs">' + ' › '.join(
             [f'<a href="{r}index.html">トップ</a>'] + [f'<a href="{r}{u}">{esc(t)}</a>' if u else esc(t) for u, t in crumbs]) + '</nav>'
+    m = re.search(r'<p class="lead">(.*?)</p>', body, re.S)
+    LEADS[path] = (title if title != site else 'インタビュー検索', re.sub(r'<span class="ic".*?</span>', '', m.group(1)).strip() if m else '')
+    body = re.sub(r'<h1>.*?</h1>', '', body, count=1, flags=re.S)
+    body = re.sub(r'\s*<p class="lead">.*?</p>', '', body, count=1, flags=re.S)
+    cr = ''
+    if '<p class="count" id="count"></p>' in body:
+        body = body.replace('<p class="count" id="count"></p>', '<div class="cbar"><p class="count" id="count"></p>' + ABOUT_HTML + '</div>', 1)
+    elif '<div class="outbar"><span class="count" id="count">' in body:
+        body = re.sub(r'<div class="outbar">(<span class="count" id="count">.*?</span>)', lambda m_: '<div class="outbar cbar">' + m_.group(1) + ABOUT_HTML, body, count=1)
+    else:
+        body = '<div class="cbar"><p class="count"></p>' + ABOUT_HTML + '</div>' + body
     full = f'{esc(title)}｜{esc(site)}' if title != site else esc(site)
     src = f'（{FETCHED}取得）' if FETCHED else ''
     doc = f'''<!DOCTYPE html>
@@ -255,11 +273,13 @@ def page(path, title, body, crumbs=(), current=None, desc='', script='', head=''
 {FONTS}<link rel="stylesheet" href="{r}style.css?v={CSS_V}">{head}</head>
 <body><div class="wrap">
 <nav class="nav" aria-label="サイト内">{nav}</nav>
+<h1 class="site"><a href="{r}index.html">{esc(site)}</a></h1>
 <main>{cr}
 {body.replace('{R}', r)}
 </main>
-<footer class="site"><p>番組・スタッフ・各話の基礎データは日本語版ウィキペディアの各記事{src}をもとに加工したもので、<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja">CC BY-SA 4.0</a> で提供します（<a href="{r}about.html#data">出典と加工について</a>）。</p></footer>
-</div>{script}<script data-goatcounter="https://nzanke.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script></body></html>
+<footer class="site"><p>番組・スタッフ・各話の基礎データは日本語版ウィキペディアの各記事{src}をもとに加工したもので、<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja">CC BY-SA 4.0</a> で提供します（<a href="{r}about.html#data">出典と加工について</a>）。</p>
+<p>掲載内容の削除のご要望などは、X（<a href="https://x.com/bg75gf">@bg75gf</a>）までご連絡ください。</p></footer>
+</div><script src="{r}about.js?v={ABOUT_V}" data-page="{esc(path)}"></script>{script}<script data-goatcounter="https://nzanke.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script></body></html>
 '''
     dest = os.path.join(OUT, path)
     os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -446,21 +466,21 @@ def search_page(path, mode, h1, lead, ph):
     if mode == 'interview':
         legend = '／'.join(f'<span class="ic" style="--h:{h}">　</span>{esc(g)}' for g, h in GENRES)
         icons = []
-        castopt = '<label><input type="checkbox" id="cast" checked> キャスト（声優）のインタビューも出す（<span class="sq">声</span>の印）</label>'
+        castopt = '<label><input type="checkbox" id="cast" checked> 声優も</label>'
     else:   # レビュー検索は種類（評論・感想・資料）で分けない
         icons, legend, castopt = [], '', ''
     page(path, h1 if path != 'index.html' else CONF['サイト名'], f'''<h1>{esc(h1)}</h1>
-<p class="lead">{esc(lead)} {legend}</p>
+<p class="lead">{esc(lead)}</p>
 <div class="sbar"><input type="search" id="q" placeholder="{esc(ph)}" autofocus><div class="mpick"><button type="button" id="mbtn" aria-haspopup="true" aria-expanded="false">{'媒体' if mode == 'interview' else '連載'}：すべて ▾</button><div id="mpop" class="mpop" hidden></div></div></div>
-<div class="opts scope"><span class="lb">探す範囲</span><label><input type="radio" name="scope" value="title"> 題名だけ</label><label><input type="radio" name="scope" value="tag" checked> 題名とタグ</label><label><input type="radio" name="scope" value="all"> 本文に出てくる作品・人まで</label></div>
+<div class="opts scope"><label><input type="radio" name="scope" value="title"> 題名だけ</label><label><input type="radio" name="scope" value="tag" checked> タグも</label><label><input type="radio" name="scope" value="all"> 本文も</label></div>
 <div class="opts"><label><input type="checkbox" id="old"> 古い順</label>{castopt}</div>
 <p class="count" id="count"></p>
 <ul class="ulist" id="list"></ul>
 <button class="more" id="more" hidden>さらに表示</button>''', current=path,
          script=f'<script>window.IDX="index.json?v={IDX_V}";window.MODE="{mode}";window.ICONS={json.dumps({n: [i, h] for n, i, h in icons}, ensure_ascii=False)};window.GENRES={json.dumps(GENRES, ensure_ascii=False)};window.SITE_GENRE={json.dumps(SITE_GENRE, ensure_ascii=False)}</script><script src="search.js?v={SEARCH_V}"></script>')
 
-search_page('index.html', 'interview', CONF['サイト名'], CONF.get('説明', ''), '番組名・スタッフ名・題名から検索（スペース区切りで AND）')
-search_page('column.html', 'column', 'アニメレビュー検索', 'アニメのレビュー・感想・評論などの記事を、番組名・スタッフ名・題名で探せる索引です。', '番組名・スタッフ名・題名から検索（スペース区切りで AND）')
+search_page('index.html', 'interview', CONF['サイト名'], CONF.get('説明', ''), '作品・人・題名で検索')
+search_page('column.html', 'column', 'アニメレビュー検索', 'アニメのレビュー・感想・評論などの記事を、番組名・スタッフ名・題名で探せる索引です。', '作品・人・題名で検索')
 
 # ---------------------------------------------------------------- スタッフランキング（年代別・折り畳み）
 SKIP_KUBUN = COMPANY_KUBUN | {'原作・原案'}
@@ -516,11 +536,15 @@ for _f in ('viewer.html', 'akiba.js'): shutil.copy(D('static', _f), OUT)   # ア
 RJS_V = hashlib.sha1(open(D('static', 'ranking.js'), 'rb').read()).hexdigest()[:8]
 GHUE = {g: (250 + i * 360 // len(RANK_GROUPS)) % 360 for i, g in enumerate(RANK_GROUPS)}   # 役職ごとの色相（明るさ・彩度はそろえる）
 btns = ''.join(f'<button type="button" data-g="{esc(g)}" style="--h:{GHUE[g]}"{" class=on" if g == "全役職" else ""}>{esc(g)}</button>' for g in RANK_GROUPS)
-dets = ''.join(f'<details class="grp" data-d="{esc(d)}"{" open" if d == decs[-1] else ""}><summary>{esc(d)}<span class="n"></span></summary><ul class="list rank"></ul></details>' for d in decs)
+toc = ('<div class="toc">' + ''.join(f'<a class="cat" style="--h:{(200 + i * 25) % 360}" href="#d{i}">{esc(d)}</a>' for i, d in enumerate(decs))
+       + '<span class="tocb"><button type="button" data-all="1">すべて開く</button><button type="button" data-all="0">すべて閉じる</button></span></div>')
+TOCJS = ('<script>document.querySelectorAll(".toc a").forEach(a=>a.addEventListener("click",()=>{const d=document.querySelector(a.getAttribute("href"));if(d)d.open=true}));'
+         'document.querySelectorAll(".tocb button").forEach(b=>b.addEventListener("click",()=>document.querySelectorAll("details.grp").forEach(d=>d.open=b.dataset.all==="1")));</script>')
+dets = ''.join(f'<details class="grp" id="d{decs.index(d)}" data-d="{esc(d)}"><summary>{esc(d)}<span class="n"></span></summary><ul class="list rank"></ul></details>' for d in decs)
 page('ranking.html', 'スタッフランキング', f'''<h1>スタッフランキング</h1><p class="lead">年代ごとに、その年代に始まったテレビアニメに多く関わったスタッフを並べています（数字は番組数。スタッフ欄と各話リストの脚本・絵コンテ・演出・作画監督から数えています）。役職を押すと切り替わります。名前を押すと、その人が出てくる記事を検索します。</p>
 <div class="seg" id="seg">{btns}</div>
-<div id="rank">{dets}</div>''', crumbs=[('tools.html', 'ツール集'), (None, 'スタッフランキング')], current='tools.html',
-     script=f'<script>window.RANK="ranking.json?v={RANK_V}"</script><script src="ranking.js?v={RJS_V}"></script>')
+{toc}<div id="rank">{dets}</div>''', crumbs=[('tools.html', 'ツール集'), (None, 'スタッフランキング')], current='tools.html',
+     script=f'<script>window.RANK="ranking.json?v={RANK_V}"</script><script src="ranking.js?v={RJS_V}"></script>' + TOCJS)
 
 
 # 追加ページ用の各話の一覧（eps/<番組ID>.json）
@@ -629,6 +653,27 @@ page('tools.html', 'ツール集', '<h1>ツール集</h1><p class="lead">番組�
 about = open(D('content', 'about.md'), encoding='utf-8-sig').read() if os.path.exists(D('content', 'about.md')) else ''
 page('about.html', 'このサイトについて', '<h1>このサイトについて</h1><div class="text">' + render_body(about, '', 2) + '</div>',
      crumbs=[(None, 'このサイトについて')], current='about.html')
+
+HELP = [('検索と絞り込みの使い方', '<ul><li>言葉をスペースで区切ると、すべてを含む記事に絞ります。</li><li>探す範囲：「題名だけ」は題名から、「タグも」は題名と一覧に出ているタグから、「本文も」は記事の中に出てくる作品・人まで探します。</li>'
+         '<li>「媒体」「連載」のボタンで、媒体や連載を選んで絞ります。複数選べます。</li><li>「古い順」で日付の古い記事から並べます。「声優も」を外すと、キャスト（声優）のインタビューを出しません。</li><li>タグを押すと、そのタグで検索します。</li></ul>'),
+        ('表示の見方', '<ul><li>記事は月ごとにまとめ、日にちと曜日を添えています。日付が月までしかわからない記事は「頃」、わからない記事は「—」として「日付なし」にまとめています。</li>'
+         '<li>題名のあとの札は掲載した媒体です。インタビュー検索では、色で媒体の種類（' + '・'.join(g for g, _ in GENRES) + '）を分けています。</li>'
+         '<li>タグ：「#」付きは作品、そのほかは人です。レビュー検索の橙のタグは連載、紫のタグは手で付けたタグです。</li><li>声：キャスト（声優）のインタビューです。</li></ul>')]
+_ab = {t.split(' {#')[0]: render_body(b, '', 3) for t, b in re.findall(r'^## (.+?)\n(.*?)(?=^## |\Z)', about, re.S | re.M)}
+COLLECT = ('集めているもの', _ab.get('このサイトについて', ''))
+NOTPUT = ('載せていないもの', '<ul><li>記事の本文・画像は載せていません。題名・日付・媒体・筆者と、掲載元へのリンクだけです。</li><li>インタビュー・レビュー以外の記事（ニュース・告知など）は載せていません。アニメの制作決定ニュースは<a href="' + NEWS_SITE + '">別のサイト</a>にあります。</li></ul>')
+SOURCE = ('出典・連絡先', _ab.get('基礎データの出典と加工', '') + _ab.get('クレジット表', '') + _ab.get('ライセンス', '')
+          + '<p>掲載内容の削除のご要望などは、X（<a href="https://x.com/bg75gf">@bg75gf</a>）までご連絡ください。</p>')
+PAGES = [p_ for p_ in ('index.html', 'column.html', 'ranking.html', 'staff_season.html', 'episode_credits.html', 'film_staff.html', 'tools.html') if p_ in LEADS]
+about_js = ('(function(){var S=document.currentScript,pg=S&&S.dataset.page;var L=' + json.dumps({p_: LEADS[p_] for p_ in PAGES}, ensure_ascii=False)
+    + ',O=' + json.dumps(PAGES) + ',H=' + json.dumps([HELP[0], HELP[1], COLLECT, NOTPUT, SOURCE], ensure_ascii=False) + ';'
+    + 'function init(){var b=document.getElementById("aboutbox");if(!b)return;var h="",me=L[pg];'
+    + 'if(me&&me[1])h+="<h3>"+me[0]+"</h3><p>"+me[1]+"</p>";'
+    + 'h+="<h3>ほかのページ</h3><ul>"+O.filter(function(p){return p!==pg}).map(function(p){return "<li><a href='"+p+"'>"+L[p][0]+"</a>："+L[p][1].replace(/<[^>]+>/g,"").split("。")[0]+"。</li>"}).join("")+"</ul>";'
+    + 'H.forEach(function(x){h+="<h3>"+x[0]+"</h3>"+x[1]});b.innerHTML=h;var d=b.closest("details");'
+    + 'document.addEventListener("click",function(e){if(d.open&&!d.contains(e.target))d.open=false});}'
+    + 'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();})();\n')
+with open(os.path.join(OUT, 'about.js'), 'w', encoding='utf-8') as f: f.write(about_js)
 
 n = sum(len(fs) for _, _, fs in os.walk(OUT))
 size = sum(os.path.getsize(os.path.join(a, f)) for a, _, fs in os.walk(OUT) for f in fs)
