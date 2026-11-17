@@ -22,7 +22,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: 配信予定を取ってくる
-        run: python3 tools/haishin/fetch.py /tmp/raw
+        run: |
+          pip install -q playwright
+          python3 tools/haishin/fetch.py /tmp/raw
       - name: 作品ごとの配信日時の一覧を作る
         run: python3 tools/haishin/build_schedule.py /tmp/raw data/haishin/schedule.json
       - name: 変わっていればサイトに置く

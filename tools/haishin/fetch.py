@@ -111,7 +111,7 @@ if pg:
         new_tids = [g['TID'] for g in (dict(re.findall(r'<(\w+)>(.*?)</\1>', it, re.S)) for it in re.findall(r'<TitleItem\b.*?</TitleItem>', allt, re.S))
                     if g.get('Cat') in ('1', '10') and (int(g.get('FirstYear') or 0), int(g.get('FirstMonth') or 0)) in first]
         tids = sorted(set(tids) | set(new_tids), key=int)
-        log.append(f'syoboi 今期・次期に始まる作品\t{len(new_tids)}')
+        log.append(f'syoboi 今期・次期に始まる作品\t{len(new_tids)}（作品情報{allt.count("<TitleItem")}件・{len(allt)}字）')
     except Exception as e:
         log.append(f'syoboi 新番組\tFAIL {e}')
     parts = []
@@ -158,6 +158,8 @@ if pg:
     import official
     urls = official_urls = official.official_urls('\n'.join(parts))
     off = official.fetch_all(urls)
+    rendered = official.render([v for v in off.values() if official.thin(v)])
+    log.append(f'公式サイト：ブラウザで読み直した{rendered}')
     json.dump(off, open(os.path.join(OUT, 'official.json'), 'w', encoding='utf-8'), ensure_ascii=False)
     log.append(f'official.json\t公式サイト{len(urls)}・取得できた{sum(1 for v in off.values() if v["pages"])}')
 
