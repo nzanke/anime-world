@@ -1,0 +1,46 @@
+name: アニメ配信カレンダーの予定を取り直す
+# dアニメストア・U-NEXT・DMM TV・gamebiz・しょぼいカレンダーから今期アニメの配信予定を取り、data/haishin/schedule.json を更新する。
+# 変わっていればサイトの組み立て（pages.yml）が動くよう、DB_TOKEN で押す。
+on:
+  schedule:
+    - cron: '43 19 * * *'     # 毎日 4:43（日本時間）
+    - cron: '43 7 * * *'      # 毎日 16:43（日本時間）
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: haishin
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 配信予定を取ってくる
+        run: python3 tools/haishin/fetch.py /tmp/raw
+      - name: 作品ごとの配信日時の一覧を作る
+        run: python3 tools/haishin/build_schedule.py /tmp/raw data/haishin/schedule.json
+      - name: 変わっていればサイトに置く
+        env:
+          DB_TOKEN: ${{ secrets.DB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python3 - <<'PY'
+          import json, subprocess
+          new = json.load(open('data/haishin/schedule.json'))
+          try: old = json.loads(subprocess.run(['git', 'show', 'HEAD:data/haishin/schedule.json'], capture_output=True, text=True).stdout)
+          except Exception: old = {}
+          strip = lambda d: {k: v for k, v in d.items() if k != 'generated'}
+          open('/tmp/same', 'w').write('1' if old and strip(old) == strip(new) else '0')
+          PY
+          if [ "$(cat /tmp/same)" = 1 ]; then echo "予定に変わりなし"; exit 0; fi
+          git remote set-url origin "https://x-access-token:${DB_TOKEN}@github.com/nzanke/anime-world.git"
+          git add data/haishin/schedule.json
+          git commit -qm "アニメ配信カレンダーの予定を更新"
+          for i in 1 2 3; do git pull -q --rebase && git push -q && break; sleep 5; done

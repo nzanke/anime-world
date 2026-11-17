@@ -637,8 +637,73 @@ for _old, _new in (('news.html', ''), ('upcoming.html', 'upcoming.html'), ('rele
                 f'<meta http-equiv="refresh" content="0; url={NEWS_SITE}{_new}"><link rel="canonical" href="{NEWS_SITE}{_new}"></head>'
                 f'<body><p>アニメ制作決定ニュースは <a href="{NEWS_SITE}{_new}">{NEWS_SITE}{_new}</a> に移転しました。</p></body></html>')
 
+# アニメ配信カレンダー（data/haishin/schedule.json は毎日 .github/workflows/haishin.yml が更新する。購読の設定は content/haishin_my.json）
+HAISHIN_CSS = """<style>
+.hs-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}
+.hs-k{font-size:12px;color:var(--muted);width:3.5em;flex:0 0 auto}
+.hs-chip{font-size:13px;padding:3px 10px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);cursor:pointer;color:var(--muted);user-select:none;white-space:nowrap}
+.hs-chip input{display:none}.hs-chip small{margin-left:4px;font-size:11px;opacity:.7}
+.hs-chip.on{color:var(--fg);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--accent);background:var(--pale)}
+.hs-mini{font-family:var(--sans);font-size:12px;padding:3px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);cursor:pointer}
+#hs-tabs{margin:14px 0 4px}
+.hs-note{font-size:13px;color:var(--muted);margin:8px 0}
+.hs-day{font-size:15px;margin:22px 0 4px;padding-bottom:4px;border-bottom:2px solid var(--fg)}
+.hs-day.sat{color:#2a62b8}.hs-day.sun{color:var(--accent)}
+.hs-day span{font-size:11px;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--accent);color:#fff;vertical-align:2px}
+.hs-list{list-style:none;padding:0;margin:0}
+.hs-list li{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.hs-list li.past{opacity:.45}
+.hs-t{flex:0 0 3.2em;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.hs-b{flex:1;min-width:0;font-size:14px}
+.hs-s{display:inline-block;margin-left:6px;font-size:11px;padding:0 8px;border-radius:999px;color:oklch(0.46 0.12 260);background:oklch(0.955 0.03 260);white-space:nowrap}
+.hs-s.tv{color:oklch(0.46 0.12 150);background:oklch(0.955 0.03 150)}
+@media (prefers-color-scheme:dark){.hs-s{color:oklch(0.86 0.09 260);background:oklch(0.30 0.05 260)}.hs-s.tv{color:oklch(0.86 0.09 150);background:oklch(0.30 0.05 150)}}
+.hs-oth{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.hs-bar{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.hs-bar input{flex:1 1 220px;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.hs-works{list-style:none;padding:0;margin:0}
+.hs-works li{border-bottom:1px solid var(--line)}
+.hs-works label{display:flex;gap:10px;padding:8px 0;cursor:pointer;align-items:flex-start}
+.hs-works input{margin-top:5px;transform:scale(1.2)}
+.hs-works li.na{opacity:.5}.hs-works li.on b{color:var(--accent)}
+.hs-works b{font-size:14px;display:block}
+.hs-slot{display:block;font-size:12px}
+.hs-where{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.hs-where i{font-style:normal;font-size:10px;padding:0 6px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);color:var(--muted)}
+.hs-where i.on{color:var(--fg);box-shadow:inset 0 0 0 1px var(--muted)}
+.hs-url code{font-size:12px;word-break:break-all;background:var(--pale);padding:2px 6px;border-radius:4px}
+.hs-steps{font-size:13px;padding-left:1.4em}.hs-steps li{margin:4px 0}
+.hs-btn{font-size:14px;padding:8px 18px}
+.hs-src{font-size:12px;color:var(--muted);margin-top:28px}
+</style>"""
+if os.path.exists(D('data', 'haishin', 'schedule.json')):
+    sys.path.insert(0, D('tools', 'haishin'))
+    from make_ics import make_ics
+    _hd = os.path.join(OUT, 'haishin')
+    os.makedirs(_hd, exist_ok=True)
+    shutil.copy(D('data', 'haishin', 'schedule.json'), _hd)
+    _sched = json.load(open(D('data', 'haishin', 'schedule.json'), encoding='utf-8'))
+    if os.path.exists(D('content', 'haishin_my.json')):
+        _my = json.load(open(D('content', 'haishin_my.json'), encoding='utf-8'))
+        json.dump(_my, open(os.path.join(_hd, 'my.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+        with open(os.path.join(_hd, 'my.ics'), 'w', encoding='utf-8', newline='') as f:
+            f.write(make_ics(_sched, _my, 'https://nzanke.github.io/anime-world/haishin.html'))
+    shutil.copy(D('static', 'haishin.js'), OUT)
+    HV = hashlib.sha1(open(D('static', 'haishin.js'), 'rb').read() + open(D('data', 'haishin', 'schedule.json'), 'rb').read()).hexdigest()[:8]
+    page('haishin.html', 'アニメ配信カレンダー', f"""<h1>アニメ配信カレンダー</h1>
+<p class="lead">契約している配信サービスと見る作品を選ぶと、各話をいちばん早く見られる日時で自分用の番組表を作ります。Googleカレンダーで購読もできます。配信予定は毎日自動で取り直します。</p>
+<p class="count" id="count"></p>
+<div id="hs-svc"></div>
+<nav class="tabs" id="hs-tabs"></nav>
+<div id="hs-main"><p class="hs-note">読み込み中…</p></div>
+<p class="hs-src">配信予定の出どころ：dアニメストア・U-NEXT・DMM TV の今期アニメ一覧（公式）、Netflix・Prime Video ほかは gamebiz の「放送・配信情報一覧」記事、テレビ放送は<a href="https://cal.syoboi.jp/">しょぼいカレンダー</a>（<span id="hs-gen"></span>）。U-NEXT・Netflix・Prime Video などは配信開始日から毎週として出しているため、休止や時刻の変更は反映されないことがあります。視聴前に各サービスでご確認ください。</p>""",
+         crumbs=[('tools.html', 'ツール集'), (None, 'アニメ配信カレンダー')], current='tools.html', head=HAISHIN_CSS,
+         desc='契約中の配信サービスで、今期アニメの各話をいちばん早く見られる日時を並べる自分用の番組表。Googleカレンダーで購読できます。',
+         script=f'<script src="haishin.js?v={HV}" data-v="{HV}"></script>')
+
 # ツール集（スタッフランキングとクレジット表への入口）
-TOOLS = [('ranking.html', 'スタッフランキング', '年代ごとに、多くのテレビアニメに関わったスタッフを並べます。役職で切り替えられます。'),
+TOOLS = [('haishin.html', 'アニメ配信カレンダー', '契約している配信サービスと見る作品を選ぶと、各話をいちばん早く見られる日時で自分用の番組表を作ります。Googleカレンダーで購読もできます。'),
+         ('ranking.html', 'スタッフランキング', '年代ごとに、多くのテレビアニメに関わったスタッフを並べます。役職で切り替えられます。'),
          ('staff_season.html', 'シーズン別スタッフ表', 'テレビアニメを始まった季節ごとに並べ、選んだ役職のスタッフを書き出します。'),
          ('episode_credits.html', '各話クレジット', '各話リストの作画監督・脚本・絵コンテ・演出などを、季節ごとに書き出します。'),
          ('film_staff.html', 'アニメ映画スタッフ表', 'アニメ映画のスタッフを、公開年と役職で書き出します。'),
@@ -664,7 +729,7 @@ COLLECT = ('集めているもの', _ab.get('このサイトについて', ''))
 NOTPUT = ('載せていないもの', '<ul><li>記事の本文・画像は載せていません。題名・日付・媒体・筆者と、掲載元へのリンクだけです。</li><li>インタビュー・レビュー以外の記事（ニュース・告知など）は載せていません。アニメの制作決定ニュースは<a href="' + NEWS_SITE + '">別のサイト</a>にあります。</li></ul>')
 SOURCE = ('出典・連絡先', _ab.get('基礎データの出典と加工', '') + _ab.get('クレジット表', '') + _ab.get('ライセンス', '')
           + '<p>掲載内容の削除のご要望などは、X（<a href="https://x.com/bg75gf">@bg75gf</a>）までご連絡ください。</p>')
-PAGES = [p_ for p_ in ('index.html', 'column.html', 'ranking.html', 'staff_season.html', 'episode_credits.html', 'film_staff.html', 'tools.html') if p_ in LEADS]
+PAGES = [p_ for p_ in ('index.html', 'column.html', 'haishin.html', 'ranking.html', 'staff_season.html', 'episode_credits.html', 'film_staff.html', 'tools.html') if p_ in LEADS]
 about_js = ('(function(){var S=document.currentScript,pg=S&&S.dataset.page;var L=' + json.dumps({p_: LEADS[p_] for p_ in PAGES}, ensure_ascii=False)
     + ',O=' + json.dumps(PAGES) + ',H=' + json.dumps([HELP[0], HELP[1], COLLECT, NOTPUT, SOURCE], ensure_ascii=False) + ';'
     + 'function init(){var b=document.getElementById("aboutbox");if(!b)return;var h="",me=L[pg];'

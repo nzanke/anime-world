@@ -17,3 +17,9 @@
 
 ## 手元で確かめる
 `python3 build.py` → `_site/index.html`（検索は `python3 -m http.server` などで開く）
+
+## アニメ配信カレンダー（haishin.html）
+契約している配信サービスと見る作品を選ぶと、各話をいちばん早く見られる日時で自分用の番組表を作るページ。Googleカレンダーで購読もできる（`haishin/my.ics`）。
+- 予定の取得：`.github/workflows/haishin.yml` が毎日2回、`tools/haishin/fetch.py`（取得）→ `build_schedule.py`（作品ごとの配信日時の一覧）を動かし、`data/haishin/schedule.json` を更新する
+- 取り先：dアニメストア（今期一覧の裏のAPI）・U-NEXT（今期アニメ一覧ページ）・DMM TV（配信カレンダーの裏のGraphQL）・gamebiz の「放送・配信情報一覧」記事（Netflix・Prime Video ほか。記事のURLは `tools/haishin/sources.json`、季節ごとに足す）・しょぼいカレンダー（地上波キー局・TOKYO MX）
+- 購読の設定：`content/haishin_my.json`（ページの「購読の設定に保存」で中身がコピーされ、GitHub の編集画面が開く）。`build.py` が `make_ics.py` で `haishin/my.ics` を書き出す
