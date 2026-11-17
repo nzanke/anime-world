@@ -11,12 +11,14 @@
   var EDIT_URL = 'https://github.com/nzanke/anime-world/edit/main/content/haishin_my.json';
   var DEF_SVC = ['danime', 'unext', 'dmm', 'netflix', 'prime', 'tv:NHK総合', 'tv:NHK Eテレ', 'tv:日本テレビ', 'tv:TBS', 'tv:フジテレビ', 'tv:テレビ朝日', 'tv:テレビ東京', 'tv:TOKYO MX'];
   var WD = '日月火水木金土';
-  var D, NAMES = {}, MY = null, svc, sel, view = LS.get('hs_view', 'week'), q = '';
+  var D, NAMES = {}, MY = null, svc, sel, view = LS.get('hs_view', 'fast'), q = '';
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function P(t) { // 'YYYY-MM-DDTHH:MM'（日本時間）を分解
-    var y = +t.slice(0, 4), m = +t.slice(5, 7), d = +t.slice(8, 10);
-    return { y: y, m: m, d: d, hm: (+t.slice(11, 13)) + ':' + t.slice(14, 16), wd: WD[new Date(Date.UTC(y, m - 1, d)).getUTCDay()], day: t.slice(0, 10) };
+  function P(t) { // 'YYYY-MM-DDTHH:MM'（日本時間）を分解。深夜アニメ向けに 4時前は前の日の 24〜27時として扱う
+    var y = +t.slice(0, 4), m = +t.slice(5, 7), d = +t.slice(8, 10), h = +t.slice(11, 13);
+    if (h < 4) { var x = new Date(Date.UTC(y, m - 1, d) - 864e5); y = x.getUTCFullYear(); m = x.getUTCMonth() + 1; d = x.getUTCDate(); h += 24; }
+    var day = y + '-' + ('0' + m).slice(-2) + '-' + ('0' + d).slice(-2);
+    return { y: y, m: m, d: d, h: h, hm: h + ':' + t.slice(14, 16), k: ('0' + h).slice(-2) + t.slice(14, 16), wd: WD[new Date(Date.UTC(y, m - 1, d)).getUTCDay()], day: day };
   }
   function nowJST() { var n = new Date(Date.now() + 9 * 3600e3); return n.toISOString().slice(0, 16); }
   function addDays(t, k) { var x = new Date(Date.parse(t.slice(0, 10) + 'T00:00:00Z') + k * 864e5); return x.toISOString().slice(0, 10); }
@@ -65,13 +67,54 @@
     };
   }
 
+
+  // ------------------------------------------------------------ 最速の週間表（作品ごとに、いちばん早く見られる曜日・時刻）
+  function gap(min) {
+    var a = Math.abs(min), d = Math.floor(a / 1440), h = Math.floor(a % 1440 / 60), m = a % 60;
+    return (d ? d + '日' : '') + (h ? h + '時間' : '') + (!d && !h ? m + '分' : (!d && m ? m + '分' : ''));
+  }
+  function mins(t) { return Date.parse(t + ':00+09:00') / 60e3; }
+  function renderFast() {
+    var S = svcSet(), now = nowJST();
+    var picked = sel.length ? D.works.filter(function (w) { return sel.indexOf(w.id) >= 0; }) : D.works;
+    var cols = {}, none = [];
+    picked.forEach(function (w) {
+      var lim = addDays(now, 10), x = episodes(w, S).filter(function (e) { return e.t >= now && e.t < lim; })[0];
+      if (!x) { if (sel.length) none.push(w); return; }
+      var p = P(x.t);
+      // 同じ話のテレビ放送（選んでいない局も含めていちばん早いもの）と比べる
+      var tv = w.e.filter(function (e) { return isTV(e[0]) && e[2] === x.n; }).sort(function (a, b) { return a[1] < b[1] ? -1 : 1; })[0];
+      var cmp;
+      if (x.svcs.every(isTV)) cmp = '<span class="hs-cmp">テレビ放送が最速</span>';
+      else if (!tv) cmp = '<span class="hs-cmp">テレビ放送なし（配信のみ）</span>';
+      else {
+        var g = mins(tv[1]) - mins(x.t), q = P(tv[1]);
+        cmp = '<span class="hs-cmp' + (g > 0 ? ' up' : '') + '">' + (g > 0 ? 'テレビ（' + esc(sname(tv[0])) + ' ' + q.wd + ' ' + q.hm + '）より' + gap(g) + '早い' : g === 0 ? 'テレビ（' + esc(sname(tv[0])) + '）と同時' : 'テレビ（' + esc(sname(tv[0])) + ' ' + q.wd + ' ' + q.hm + '）の' + gap(-g) + '後') + '</span>';
+      }
+      var nxt = x.others[0] ? '<span class="hs-oth">次に早い：' + esc(sname(x.others[0][0])) + ' ' + P(x.others[0][1]).wd + ' ' + P(x.others[0][1]).hm + '</span>' : '';
+      (cols[p.wd] = cols[p.wd] || []).push({ k: p.k, h: '<li><span class="hs-t">' + p.hm + '</span><span class="hs-b"><b>' + esc(w.t) + '</b> ' + (epLabel(x) ? '<small>次は' + epLabel(x) + '</small>' : '') +
+        '<span class="hs-s' + (x.svcs.every(isTV) ? ' tv' : '') + '">' + esc(svcLabel(x.svcs)) + '</span>' + cmp + nxt + '</span></li>' });
+    });
+    var n = 0, h = sel.length ? '' : '<p class="hs-note">作品をまだ選んでいないので、選んだサービスで見られる作品を全部出しています。「作品を選ぶ」で見る作品に印を付けると、自分用の表になります。</p>';
+    h += '<p class="hs-note">各作品を、選んだサービスの中でいちばん早く見られる曜日・時刻に置いています（深夜は28時まで前の日として表示）。</p><div class="hs-wk">';
+    '月火水木金土日'.split('').forEach(function (wd) {
+      var l = (cols[wd] || []).sort(function (a, b) { return a.k < b.k ? -1 : 1; });
+      n += l.length;
+      h += '<section><h3 class="hs-day' + (wd === '土' ? ' sat' : wd === '日' ? ' sun' : '') + '">' + wd + '曜' + '<small>' + l.length + '作品</small></h3><ul class="hs-list">' + l.map(function (x) { return x.h; }).join('') + '</ul></section>';
+    });
+    h += '</div>';
+    if (none.length) h += '<p class="hs-note">選んだサービスでは見られない作品：' + none.map(function (w) { return esc(w.t); }).join('、') + '</p>';
+    $('#hs-main').innerHTML = h;
+    $('#count').textContent = (sel.length ? '選んだ' + sel.length + '作品' : '選んだサービスの全作品') + '　週' + n + '本';
+  }
+
   // ------------------------------------------------------------ これから7日間
   function renderWeek() {
-    var S = svcSet(), now = nowJST(), start = now.slice(0, 10), end = addDays(start, 7);
+    var S = svcSet(), now = nowJST(), start = P(now).day, end = addDays(start, 7);
     var picked = sel.length ? D.works.filter(function (w) { return sel.indexOf(w.id) >= 0; }) : D.works;
     var rows = [];
     picked.forEach(function (w) {
-      episodes(w, S).forEach(function (x) { if (x.t.slice(0, 10) >= start && x.t.slice(0, 10) < end) rows.push({ w: w, x: x }); });
+      episodes(w, S).forEach(function (x) { var dd = P(x.t).day; if (dd >= start && dd < end) rows.push({ w: w, x: x }); });
     });
     rows.sort(function (a, b) { return a.x.t < b.x.t ? -1 : a.x.t > b.x.t ? 1 : (a.w.t < b.w.t ? -1 : 1); });
     var h = sel.length ? '' : '<p class="hs-note">作品をまだ選んでいないので、選んだサービスで配信される作品を全部出しています。「作品を選ぶ」で見る作品に印を付けると、自分用の表になります。</p>';
@@ -91,7 +134,7 @@
 
   // ------------------------------------------------------------ 作品を選ぶ
   function slot(w, S) {
-    var now = nowJST(), ep = episodes(w, S).filter(function (x) { return x.t >= now.slice(0, 10); })[0];
+    var now = nowJST(), ep = episodes(w, S).filter(function (x) { return x.t >= now; })[0];
     if (!ep) return null;
     var p = P(ep.t);
     return { txt: p.wd + ' ' + p.hm + '　' + svcLabel(ep.svcs) + (epLabel(ep) ? '（次は' + epLabel(ep) + '）' : ''), t: ep.t };
@@ -101,7 +144,7 @@
     sel.forEach(function (i) { on[i] = 1; });
     var qq = q.trim().toLowerCase();
     var list = D.works.filter(function (w) { return !qq || w.t.toLowerCase().indexOf(qq) >= 0; }).map(function (w) { return { w: w, s: slot(w, S) }; });
-    function wk(s) { if (!s) return 1e9; var p = P(s.t); return ('月火水木金土日'.indexOf(p.wd)) * 1440 + (+s.t.slice(11, 13)) * 60 + (+s.t.slice(14, 16)); }
+    function wk(s) { if (!s) return 1e9; var p = P(s.t); return ('月火水木金土日'.indexOf(p.wd)) * 1680 + p.h * 60 + (+s.t.slice(14, 16)); }
     list.sort(function (a, b) { return (!!b.s - !!a.s) || wk(a.s) - wk(b.s) || (a.w.t < b.w.t ? -1 : 1); });
     var h = '<div class="hs-bar"><input type="search" id="hs-q" placeholder="作品名で絞り込む" value="' + esc(q) + '"><button type="button" class="hs-mini" id="hs-all">表示中を全部選ぶ</button><button type="button" class="hs-mini" id="hs-none">選択を全部外す</button></div><ul class="hs-works">';
     list.forEach(function (r) {
@@ -185,13 +228,13 @@
 
   // ------------------------------------------------------------ 全体
   function renderTabs() {
-    var T = [['week', 'これから7日間'], ['works', '作品を選ぶ（' + sel.length + '）'], ['cal', 'カレンダーに入れる']];
+    var T = [['fast', '最速の週間表'], ['week', 'これから7日間'], ['works', '作品を選ぶ（' + sel.length + '）'], ['cal', 'カレンダー']];
     $('#hs-tabs').innerHTML = T.map(function (t) { return '<a href="#' + t[0] + '"' + (view === t[0] ? ' class="on"' : '') + ' data-v="' + t[0] + '">' + t[1] + '</a>'; }).join('');
     Array.prototype.forEach.call(document.querySelectorAll('#hs-tabs a'), function (a) { a.onclick = function (e) { e.preventDefault(); view = a.dataset.v; LS.set('hs_view', view); render(); }; });
   }
   function render() {
     renderSvc(); renderTabs();
-    if (view === 'works') renderWorks(); else if (view === 'cal') renderCal(); else renderWeek();
+    if (view === 'works') renderWorks(); else if (view === 'cal') renderCal(); else if (view === 'week') renderWeek(); else renderFast();
   }
   var V = (document.currentScript && document.currentScript.dataset.v) || '';
   Promise.all([
@@ -204,7 +247,7 @@
     sel = LS.get('hs_sel', null) || (MY && MY.works !== 'all' && MY.works) || [];
     var ids = {}; D.works.forEach(function (w) { ids[w.id] = 1; });
     sel = sel.filter(function (i) { return ids[i]; });
-    if (location.hash && ['#week', '#works', '#cal'].indexOf(location.hash) >= 0) view = location.hash.slice(1);
+    if (location.hash && ['#fast', '#week', '#works', '#cal'].indexOf(location.hash) >= 0) view = location.hash.slice(1);
     $('#hs-gen').textContent = D.generated.replace('T', ' ') + ' 取得';
     render();
   }).catch(function (e) { $('#hs-main').innerHTML = '<p class="hs-note">データを読み込めませんでした（' + esc(e) + '）</p>'; });

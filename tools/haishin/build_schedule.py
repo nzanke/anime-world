@@ -9,7 +9,7 @@
   ・U-NEXT・gamebiz … 配信開始日（第1話）から毎週として出す（休止は反映されない）
   ・DMM TV … 次回の配信日時から毎週として出す
 """
-import json, os, re, sys, glob, hashlib, unicodedata, html, datetime as dt
+import json, os, re, sys, glob, hashlib, unicodedata, html, urllib.parse, datetime as dt
 from difflib import SequenceMatcher
 
 RAW, OUTF = sys.argv[1], sys.argv[2]
@@ -127,6 +127,20 @@ else:
     notes.append('しょぼいカレンダー：取得できず')
 
 # ------------------------------------------------------------ dアニメストア
+KN = {c: i for i, c in enumerate('〇一二三四五六七八九')}
+def epnum(x):
+    """「第7話」「#7」「第七話」「第二十三話」などから話数を読む"""
+    x = unicodedata.normalize('NFKC', x or '').strip()
+    m = re.match(r'^(?:第|#|episode\s*|ep\.?\s*)?(\d+)(?:話)?$', x, re.I)
+    if m: return int(m.group(1))
+    m = re.match(r'^第?([〇一二三四五六七八九十百]+)話$', x)
+    if not m: return None
+    v, cur = 0, 0
+    for c in m.group(1):
+        if c == '百': v += (cur or 1) * 100; cur = 0
+        elif c == '十': v += (cur or 1) * 10; cur = 0
+        else: cur = KN[c]
+    return v + cur
 WD = {'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6}
 n_da = 0
 seen = set()
@@ -141,8 +155,7 @@ for f in sorted(glob.glob(os.path.join(RAW, 'danime_*.json')), reverse=True):
         if not lp: continue
         t = dt.datetime.strptime(lp[:19], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=dt.timezone.utc).astimezone(JST)
         if t < NOW - dt.timedelta(days=16): continue        # 最新話が2週間以上前＝終わった（休止中）
-        m = re.search(r'^(?:第|#|＃|episode\s*|ep\.?\s*)?(\d+)(?:話)?$', unicodedata.normalize('NFKC', i.get('endPartDispNumber') or '').strip(), re.I)
-        ep = int(m.group(1)) if m else None
+        ep = epnum(i.get('endPartDispNumber'))
         if i.get('workWeek') not in WD: evs = [(t, ep, ep is not None)] if t >= LO else []
         else:
             if i.get('workTime') and re.match(r'\d\d:\d\d', i['workTime']):   # 決まった枠の時刻に合わせる
@@ -246,6 +259,72 @@ for f in sorted(glob.glob(os.path.join(RAW, 'gamebiz_*.html'))):
             add(w, k, weekly(t, 1, False), {'url': os.path.basename(f), 'src': 'gamebiz'}, prio=1)
         n_gb += 1
 
+# ------------------------------------------------------------ ウィキペディアの配信表（Netflix・Prime Video・ABEMA ほか）
+def wclean(x):
+    x = re.sub(r'<ref[^>]*/>|<ref[^>]*>.*?</ref>', '', x, flags=re.S)
+    x = re.sub(r'\{\{nobr\|([^{}]*)\}\}', r'\1', x)
+    x = re.sub(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]', r'\1', x)
+    x = re.sub(r'<br\s*/?>', '\n', x)
+    return html.unescape(x)
+def wrows(b):
+    """{{放送期間}} の中を行・セルに分ける（{{ }}・[[ ]] の中の | は区切りにしない）"""
+    rows, cur, cell, d, i = [], None, '', 0, 0
+    while i < len(b):
+        if b.startswith('{{', i) or b.startswith('[['  , i): d += 1; cell += b[i:i+2]; i += 2; continue
+        if b.startswith('}}', i) or b.startswith(']]', i): d -= 1; cell += b[i:i+2]; i += 2; continue
+        c = b[i]
+        if c == '|' and d == 1:
+            if i == 0 or b[i-1] == '\n' or (cur is None):
+                if cur is not None and b[i-1] == '\n':
+                    rows.append(cur); cur = []
+                elif cur is None: cur = []
+                else: cur.append(cell)
+                cell = ''
+            else:
+                cur.append(cell); cell = ''
+        else: cell += c
+        i += 1
+    if cur: rows.append(cur)
+    return [[x.strip() for x in r] for r in rows]
+WSV = [('netflix', r'^netflix'), ('prime', r'^(amazon\s*)?prime\s*video|^プライム・?ビデオ'), ('abema', r'^abema'), ('hulu', r'^hulu'),
+       ('lemino', r'^lemino'), ('fod', r'^fod'), ('animetimes', r'^アニメタイムズ'), ('disney', r'^disney|^ディズニープラス'),
+       ('anihoudai', r'^アニメ放題'), ('niconico', r'^ニコニコ'), ('danime', r'^dアニメストア'), ('unext', r'^u-next'), ('dmm', r'^dmm\s*tv')]
+n_wk = 0
+wk = R('wiki.json')
+if wk:
+    for tid, x in json.loads(wk).items():
+        w = W.get(html.unescape(x['title']), 'syoboi')
+        if not w: continue
+        got = {}
+        for b in x['blocks']:
+            hdr, rows = None, wrows(b)
+            for r in rows:
+                cells = [wclean(c) for c in r]
+                if hdr is None:
+                    if any('配信サイト' in c for c in cells): hdr = cells
+                    continue
+                if len(cells) < len(hdr) - 1 or any(re.match(r'^\w+\s*=', c) for c in cells[:1]): continue
+                col = lambda key: next((cells[k] for k, h in enumerate(hdr) if key in h and k < len(cells)), '')
+                ds = unicodedata.normalize('NFKC', col('配信開始') or col('配信期間') or col('配信日'))
+                ts = unicodedata.normalize('NFKC', col('配信時間') or col('更新'))
+                md, mt = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日', ds), re.search(r'([月火水木金土日])曜(?:日)?\s*(\d{1,2})[:時](\d{2})', ts)
+                if not md or not mt: continue
+                hh, mm = int(mt.group(2)), int(mt.group(3))
+                wd = (WJ[mt.group(1)] + hh // 24) % 7
+                t = dt.datetime(int(md.group(1)), int(md.group(2)), int(md.group(3)), hh % 24, mm, tzinfo=JST)
+                if t.weekday() != wd: t += dt.timedelta(days=(wd - t.weekday()) % 7)
+                for item in re.split(r'\n|・(?![^（(]*[)）])|、', col('配信サイト')):
+                    item = re.sub(r'^[*\s]+|\{\{.*?\|', '', item).strip()
+                    head = unicodedata.normalize('NFKC', re.split(r'[（(]', item)[0]).strip().lower()
+                    for k, pat in WSV:
+                        if head and re.search(pat, head):
+                            if k not in got or t > got[k]: got[k] = t   # 期が複数あれば新しいほう
+        for k, t in got.items():
+            if t < NOW - dt.timedelta(days=200) or t > HI: continue
+            add(w, k, weekly(t, 1, False), {'url': 'https://ja.wikipedia.org/wiki/' + urllib.parse.quote(x['page']), 'src': 'wiki'}, prio=1.5)
+            w.setdefault('wiki', set()).add(k)
+        if got: n_wk += 1
+
 # ------------------------------------------------------------ 期の書いていない名前（dアニメストアの通し番号の作品など）を、話数と日時が合う○期にまとめる
 def evlist(w): return [(t, n) for v in w['ev'].values() for t, n, _ in v[1] if n is not None]
 for w in list(W.items):
@@ -267,34 +346,67 @@ SRC_ORDER = lambda s: (0 if s.startswith('tv:') else 1 if s == 'danime' else 2)
 works = []
 for w in W.items:
     ev = {s: v[1] for s, v in w['ev'].items()}
+    wsrc = {s for s, v in w['ev'].items() if v[0] == 1.5}
+    if wsrc:
+        span = [t for s, v in ev.items() if s not in wsrc for t, _, _ in v]
+        for s in wsrc:
+            ev[s] = [e for e in ev[s] if span and min(span) - WEEK - dt.timedelta(days=1) <= e[0] <= max(span) + WEEK]
+            if not ev[s]: del ev[s]
     if not ev: continue
-    # 話数が確かなサービスを基準に、ほかのサービスの各回に話数を振る（いちばん近い基準の回）
-    ref = []
-    for s in sorted(ev, key=SRC_ORDER):
-        if any(e[2] for e in ev[s]): ref = [(t, n) for t, n, sure in ev[s] if n is not None]; break
+    # 話数が確かなサービス（地上波の番組表・dアニメストア）を全部まとめて基準にする
+    # dアニメストアと番組表で数え方が違う作品（第0話の有無など）は、30時間以内に重なる回があれば番組表にそろえる
+    tvref = sorted((t, n) for s in ev if s.startswith('tv:') for t, n, sure in ev[s] if sure and n is not None)
+    if tvref:
+        for s in list(ev):
+            if s.startswith('tv:'): continue
+            ds = sorted(min(((rn - n, abs((rt - t).total_seconds())) for rt, rn in tvref), key=lambda x: x[1])
+                        for t, n, sure in ev[s] if sure and n is not None)
+            ds = sorted(d for d, sec in ds if sec <= 30 * 3600)
+            if ds and ds[len(ds) // 2]:
+                k = ds[len(ds) // 2]
+                ev[s] = [(t, n + k if (sure and n is not None) else n, sure) for t, n, sure in ev[s]]
+    ref = sorted((t, n) for s in ev for t, n, sure in ev[s] if sure and n is not None)
     if not ref:
         for s in sorted(ev, key=SRC_ORDER):
             if any(e[1] is not None for e in ev[s]): ref = [(t, n) for t, n, _ in ev[s] if n is not None]; break
-    # 話数の数え方が基準と違うサービス（○期の第1話から数えるなど）は、ずれの分だけ足す
+    def nearest(t):
+        return min(ref, key=lambda r: abs((r[0] - t).total_seconds()))
+    # 話数の数え方が基準と違うサービス（○期の第1話から数えるなど）は、ずれの分だけ足す。
+    # 基準と1日以内に重なる回があれば、それで決める（同じ回とみなせる）
     shift = {}
     for s, evs in ev.items():
-        ds = []
+        close, near = [], []
         for t, n, sure in evs:
             if n is None or sure or not ref: continue
-            rt, rn = min(ref, key=lambda r: abs((r[0] - t).total_seconds()))
-            if abs((rt - t).total_seconds()) <= 3.6 * 86400: ds.append(rn - n)
-        if ds:
-            ds.sort(); shift[s] = ds[len(ds) // 2]
+            rt, rn = nearest(t)
+            dd = abs((rt - t).total_seconds())
+            if dd <= 12 * 3600: close.append(rn - n)
+            elif dd <= 3.6 * 86400: near.append(rn - n)
+        for lst, need in ((close, 0), (near, 1)):
+            if lst:
+                lst.sort(); m = lst[len(lst) // 2]
+                if abs(m) > need: shift[s] = m
+                break
+    # 話数のわからない回は、同じ日時に配信しているほかのサービスの話数を先に使う
+    same_t = {}
+    for s_, evs in ev.items():
+        for t, n, sure in evs:
+            if n is not None: same_t.setdefault(t, []).append(n + shift.get(s_, 0) if not sure else n)
     out = []
     for s, evs in ev.items():
         # このサービスの話数を、基準と比べて大きくずれていないか確かめてから使う（ずれていれば基準に合わせる）
         for t, n, sure in evs:
             if ref:
-                rt, rn = min(ref, key=lambda r: abs((r[0] - t).total_seconds()))
+                rt, rn = nearest(t)
                 near = abs((rt - t).total_seconds()) <= 3.6 * 86400
-                if n is None:
-                    n = rn if near else rn + round((t - rt) / WEEK)
-                elif not sure and near and abs(n - rn) > 1 and shift.get(s) is not None:
+                if n is None and t in same_t:
+                    l = sorted(same_t[t]); n = l[len(l) // 2]
+                elif n is None:
+                    # 配信がテレビより1日以上先に出ることはまれなので、直前（12時間後まで）の基準の回に当てる
+                    before = [r for r in ref if r[0] <= t + dt.timedelta(hours=12)]
+                    if before and t - before[-1][0] < WEEK: n = before[-1][1]
+                    else: n = rn if near else rn + round((t - rt) / WEEK)
+                elif not sure and s in shift:   # 数え方の違いは、そのサービスの全部の回に同じだけ足す
                     n = n + shift[s]
             out.append([s, iso(t), n, 1 if (n is not None) else 0])
     if not ref:   # どこにも話数がない作品：週ごとの通し番号で比べる
@@ -312,8 +424,8 @@ for w in W.items:
 
 # 取得に失敗した取り先は、前回の結果を引き継ぐ（その取り先の作品が丸ごと消えないように）
 GROUP = {'danime': lambda s: s == 'danime', 'unext': lambda s: s == 'unext', 'dmm': lambda s: s == 'dmm',
-         'syoboi': lambda s: s.startswith('tv:'), 'gamebiz': lambda s: s in ('netflix', 'prime', 'abema', 'hulu', 'lemino', 'fod', 'animetimes', 'disney', 'anihoudai', 'niconico')}
-counts = {'danime': n_da, 'unext': n_un, 'dmm': n_dm, 'gamebiz': n_gb, 'syoboi': sum(1 for w in works if any(e[0].startswith('tv:') for e in w['e']))}
+         'syoboi': lambda s: s.startswith('tv:'), 'wiki': lambda s: False, 'gamebiz': lambda s: s in ('netflix', 'prime', 'abema', 'hulu', 'lemino', 'fod', 'animetimes', 'disney', 'anihoudai', 'niconico')}
+counts = {'danime': n_da, 'unext': n_un, 'dmm': n_dm, 'gamebiz': n_gb, 'wiki': n_wk, 'syoboi': sum(1 for w in works if any(e[0].startswith('tv:') for e in w['e']))}
 if os.path.exists(OUTF):
     prev = json.load(open(OUTF, encoding='utf-8'))
     byid = {w['id']: w for w in works}

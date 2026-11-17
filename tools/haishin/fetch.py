@@ -96,7 +96,12 @@ if ch:
 a = (now - dt.timedelta(days=8)).strftime('%Y%m%d_000000'); b_ = (now + dt.timedelta(days=30)).strftime('%Y%m%d_000000')
 pg = save('syoboi_prog.xml', f'https://cal.syoboi.jp/db.php?Command=ProgLookup&ChID={",".join(ids)}&Range={a}-{b_}')
 if pg:
-    tids = sorted({m for m in re.findall(r'<TID>(\d+)</TID>', pg.decode('utf-8'))}, key=int)
+    tids = {m for m in re.findall(r'<TID>(\d+)</TID>', pg.decode('utf-8'))}
+    # ウィキペディアの配信表を引くため、地上波以外（AT-X・BSなど）で放送中の作品も拾う
+    a2, b2 = (now - dt.timedelta(days=7)).strftime('%Y%m%d_000000'), (now + dt.timedelta(days=7)).strftime('%Y%m%d_000000')
+    try: tids |= set(re.findall(r'<TID>(\d+)</TID>', get(f'https://cal.syoboi.jp/db.php?Command=ProgLookup&Range={a2}-{b2}').decode('utf-8')))
+    except Exception: pass
+    tids = sorted(tids, key=int)
     parts = []
     for i in range(0, len(tids), 50):
         b = get(f'https://cal.syoboi.jp/db.php?Command=TitleLookup&TID={",".join(tids[i:i+50])}')
@@ -104,6 +109,37 @@ if pg:
         time.sleep(1)
     open(os.path.join(OUT, 'syoboi_titles.xml'), 'w', encoding='utf-8').write('\n'.join(parts))
     log.append(f'syoboi_titles.xml\t{len(tids)}作品')
+
+    # ウィキペディアの作品記事の「配信開始日｜配信時間｜配信サイト」の表（Netflix・Prime Video など）
+    WUA = {'User-Agent': 'anime-haishin-calendar/1.0 (https://nzanke.github.io/anime-world/haishin.html; X @bg75gf)'}
+    def wraw(name):
+        u = 'https://ja.wikipedia.org/w/index.php?' + urllib.parse.urlencode({'title': name, 'action': 'raw'})
+        t = get(u, headers=WUA, tries=1, timeout=30).decode('utf-8', 'replace')
+        m = re.match(r'\s*#(?:REDIRECT|転送)\s*\[\[([^\]#|]+)', t, re.I)
+        return wraw(m.group(1)) if m else t
+    wiki, ok = {}, 0
+    for it in re.findall(r'<TitleItem\b.*?</TitleItem>', '\n'.join(parts), re.S):
+        g = dict(re.findall(r'<(\w+)>(.*?)</\1>', it, re.S))
+        if g.get('Cat') not in ('1', '10', '7'): continue
+        kw = re.findall(r'wikipedia:([^,]+)', g.get('Keywords') or '')
+        name = (kw[0] if kw else g['Title']).strip()
+        try: t = wraw(name)
+        except Exception: continue
+        blocks = []
+        for m in re.finditer(r'\{\{放送期間', t):   # 入れ子の {{ }} を数えて、ブロックの終わりまで取る
+            d, i = 0, m.start()
+            while i < len(t):
+                if t.startswith('{{', i): d += 1; i += 2
+                elif t.startswith('}}', i):
+                    d -= 1; i += 2
+                    if d == 0: break
+                else: i += 1
+            b = t[m.start():i]
+            if re.search(r'media\s*=\s*インターネット', b) or '配信サイト' in b: blocks.append(b)
+        if blocks: wiki[g['TID']] = {'title': g['Title'], 'page': name, 'blocks': blocks}; ok += 1
+        time.sleep(0.3)
+    json.dump(wiki, open(os.path.join(OUT, 'wiki.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+    log.append(f'wiki.json\t配信表のある記事{ok}')
 
 open(os.path.join(OUT, '_log.txt'), 'w', encoding='utf-8').write(now.isoformat() + '\n' + '\n'.join(log) + '\n')
 print('\n'.join(log))

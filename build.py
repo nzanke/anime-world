@@ -675,6 +675,11 @@ HAISHIN_CSS = """<style>
 .hs-steps{font-size:13px;padding-left:1.4em}.hs-steps li{margin:4px 0}
 .hs-btn{font-size:14px;padding:8px 18px}
 .hs-src{font-size:12px;color:var(--muted);margin-top:28px}
+.hs-wk{display:grid;grid-template-columns:1fr;gap:0 18px}
+@media (min-width:1100px){.wrap{max-width:1180px}.hs-wk{grid-template-columns:repeat(4,1fr)}}
+.hs-day small{font-size:11px;font-weight:400;color:var(--muted);margin-left:8px}
+.hs-b small{font-size:11px;color:var(--muted)}
+.hs-cmp{display:block;font-size:11px;color:var(--muted);margin-top:2px}.hs-cmp.up{color:var(--accent);font-weight:700}
 </style>"""
 if os.path.exists(D('data', 'haishin', 'schedule.json')):
     sys.path.insert(0, D('tools', 'haishin'))
@@ -691,12 +696,12 @@ if os.path.exists(D('data', 'haishin', 'schedule.json')):
     shutil.copy(D('static', 'haishin.js'), OUT)
     HV = hashlib.sha1(open(D('static', 'haishin.js'), 'rb').read() + open(D('data', 'haishin', 'schedule.json'), 'rb').read()).hexdigest()[:8]
     page('haishin.html', 'アニメ配信カレンダー', f"""<h1>アニメ配信カレンダー</h1>
-<p class="lead">契約している配信サービスと見る作品を選ぶと、各話をいちばん早く見られる日時で自分用の番組表を作ります。Googleカレンダーで購読もできます。配信予定は毎日自動で取り直します。</p>
+<p class="lead">契約している配信サービスと見る作品を選ぶと、各話をいちばん早く見られる日時で自分用の番組表を作ります。Googleカレンダーで購読もできます。深夜は28時までその日の番組として扱います。配信予定は毎日自動で取り直します。</p>
 <p class="count" id="count"></p>
 <div id="hs-svc"></div>
 <nav class="tabs" id="hs-tabs"></nav>
 <div id="hs-main"><p class="hs-note">読み込み中…</p></div>
-<p class="hs-src">配信予定の出どころ：dアニメストア・U-NEXT・DMM TV の今期アニメ一覧（公式）、Netflix・Prime Video ほかは gamebiz の「放送・配信情報一覧」記事、テレビ放送は<a href="https://cal.syoboi.jp/">しょぼいカレンダー</a>（<span id="hs-gen"></span>）。U-NEXT・Netflix・Prime Video などは配信開始日から毎週として出しているため、休止や時刻の変更は反映されないことがあります。視聴前に各サービスでご確認ください。</p>""",
+<p class="hs-src">配信予定の出どころ：dアニメストア・U-NEXT・DMM TV の今期アニメ一覧（公式）、Netflix・Prime Video・ABEMA ほかは各作品のウィキペディア記事の配信表と gamebiz の「放送・配信情報一覧」記事、テレビ放送は<a href="https://cal.syoboi.jp/">しょぼいカレンダー</a>（<span id="hs-gen"></span>）。U-NEXT・Netflix・Prime Video などは配信開始日から毎週として出しているため、休止や時刻の変更は反映されないことがあります。視聴前に各サービスでご確認ください。</p>""",
          crumbs=[('tools.html', 'ツール集'), (None, 'アニメ配信カレンダー')], current='tools.html', head=HAISHIN_CSS,
          desc='契約中の配信サービスで、今期アニメの各話をいちばん早く見られる日時を並べる自分用の番組表。Googleカレンダーで購読できます。',
          script=f'<script src="haishin.js?v={HV}" data-v="{HV}"></script>')
