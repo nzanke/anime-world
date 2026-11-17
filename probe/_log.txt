@@ -1,0 +1,15 @@
+2026-11-17T17:16:49.912161+09:00
+danime_202603.json	68817
+danime_202604.json	78189
+danime_202701.json	77473
+unext_202604.html	143920
+unext_202701.html	143321
+dmm_202604.json	MON:11 TUE:13 WED:14 THU:16 FRI:11 SAT:25 SUN:17
+dmm_202701.json	MON:15 TUE:11 WED:16 THU:11 FRI:14 SAT:12 SUN:12
+gamebiz_0.html	FAIL HTTP Error 504: Gateway Time-out
+syoboi_ch.xml	93094
+syoboi_prog.xml	266030
+syoboi 今期・次期に始まる作品	0
+syoboi_titles.xml	403作品
+wiki.json	配信表のある記事173
+official.json	公式サイト264・取得できた263
