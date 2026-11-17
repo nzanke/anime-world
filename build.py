@@ -226,7 +226,8 @@ def render_body(text, r, hbase=4):
     return '\n'.join(out)
 
 # ---------------------------------------------------------------- ページの枠
-NAV = [('index.html', 'インタビュー'), ('column.html', 'レビュー'), ('news.html', '制作決定'), ('tools.html', 'ツール集'), ('about.html', 'このサイトについて')]
+NEWS_SITE = 'https://nzanke.github.io/anime-news/'   # 制作決定ニュースは独立したサイトに移した（2026-11）
+NAV = [('index.html', 'インタビュー'), ('column.html', 'レビュー'), (NEWS_SITE, '制作決定'), ('tools.html', 'ツール集'), ('about.html', 'このサイトについて')]
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDMincho&family=BIZ+UDPMincho:wght@400;700&family=BIZ+UDPGothic:wght@400;700&display=swap">')
@@ -240,7 +241,7 @@ def page(path, title, body, crumbs=(), current=None, desc='', script='', head=''
     depth = path.count('/')
     r = '../' * depth
     site = CONF['サイト名']
-    nav = ''.join(f'<a href="{r}{u}"{" class=on" if u == current else ""}>{esc(t)}</a>' for u, t in NAV)
+    nav = ''.join(f'<a href="{"" if u.startswith("http") else r}{u}"{" class=on" if u == current else ""}>{esc(t)}</a>' for u, t in NAV)
     cr = ''
     if crumbs:
         cr = '<nav class="crumbs">' + ' › '.join(
@@ -604,45 +605,13 @@ if os.path.isdir(D('data', 'credits')):
           '<div class="ctlg"><span class="lb">表示</span><div class="seg" id="mode" role="group" aria-label="表示"></div></div>'
           '<label class="grow">キーワード<input id="q" type="search" placeholder="例：細田守"></label>', 'credits_films.js')
 
-# 制作決定ニュース（anime-database の articles/news_tag.py が書き出す data/news.json。本文は持たない）
-NEWS = json.load(open(D('data', 'news.json'), encoding='utf-8')) if os.path.exists(D('data', 'news.json')) else {'items': []}
-nj = json.dumps(NEWS, ensure_ascii=False, separators=(',', ':'))
-with open(os.path.join(OUT, 'news.json'), 'w', encoding='utf-8') as f: f.write(nj)
-shutil.copy(D('static', 'news.js'), OUT)
-NEWS_V = hashlib.sha1(nj.encode('utf-8')).hexdigest()[:8]
-NJS_V = hashlib.sha1(open(D('static', 'news.js'), 'rb').read()).hexdigest()[:8]
-nsites = [x for x, _ in Counter(s_ for e in NEWS['items'] for s_ in [e['s']] + [o[0] for o in e.get('o', [])]).most_common()]
-NCATS = [('', 'すべて', 250), ('映画', 'アニメ映画', 25), ('テレビ', 'テレビアニメ', 250), ('その他', 'その他（OVA・配信・CM・動画）', 150), ('未定', '媒体の発表なし', 70)]
-nbtn = ''.join(f'<button type="button" data-c="{c}" style="--h:{h}"{" class=on" if not c else ""}>{esc(t)}<span class="n"></span></button>' for c, t, h in NCATS)
-UCATS = [('', 'すべて', 250), ('映画', '映画', 25), ('テレビ', 'テレビ', 250), ('その他', '配信・OVAなど', 150), ('未定', '媒体未発表', 70)]
-ubtn = ''.join(f'<button type="button" data-c="{c}" style="--h:{h}"{" class=on" if not c else ""}>{esc(t)}<span class="n"></span></button>' for c, t, h in UCATS)
-NSCRIPT = lambda mode: f'<script>window.NEWS="news.json?v={NEWS_V}";window.MODE="{mode}"</script><script src="news.js?v={NJS_V}"></script>'
-page('news.html', 'アニメ制作決定ニュース', f'''<h1>アニメ制作決定ニュース</h1>
-<p class="lead">アニメ映画・テレビアニメ・その他のアニメ（OVA・配信アニメ・CM・動画）の制作決定（新規のアニメ化、続編・新作・劇場版の発表）と、その放送日・放送局・公開日のニュースを集めた一覧です。同じ発表を複数のサイトが伝えたものは1行にまとめています。毎日更新します。</p>
-<div class="seg" id="seg">{nbtn}</div>
-<div class="sbar"><input type="search" id="q" placeholder="作品名・題名から検索（スペース区切りで AND）">
-<select id="site"><option value="">すべてのサイト</option>{"".join(f'<option>{esc(x)}</option>' for x in nsites)}</select></div>
-<p class="jump"><a href="upcoming.html">放送・公開前のアニメ一覧（アニメ化が決まり、まだ放送・公開されていない作品）→</a></p>
-<div class="opts"><label><input type="checkbox" id="sched" checked> 放送日・放送局・公開日のニュースも出す</label><label><input type="checkbox" id="newonly"> 新規のアニメ化だけ（続編・新作を除く）</label><label><input type="checkbox" id="old"> 古い順</label></div>
-<p class="count" id="count"></p>
-<ul class="ulist" id="list"></ul>
-<button class="more" id="more" hidden>さらに表示</button>''', current='news.html', script=NSCRIPT('news'))
-page('upcoming.html', '放送・公開前のアニメ', f'''<h1>放送・公開前のアニメ</h1>
-<p class="lead">制作が決まり、まだ放送・公開されていない作品（予定の早い順、毎日更新）。<span class="ic" style="--h:25">映</span>映画 <span class="ic" style="--h:250">TV</span>テレビ <span class="ic" style="--h:150">配</span>配信・OVA・CM・動画 <span class="ic" style="--h:70">?</span>媒体未発表 <span class="sq">続</span>続編・新作。局名に指を置くと全局の日時が出ます。</p>
-<div class="seg" id="seg">{ubtn}</div>
-<div class="sbar"><input type="search" id="q" placeholder="作品名・局名で検索"></div>
-<div class="opts"><label><input type="checkbox" id="newonly"> 新規のアニメ化だけ</label><a class="jump" href="released.html">放送・公開済みになった作品 →</a><a class="jump" href="news.html">制作決定ニュースの一覧 →</a></div>
-<p class="count" id="count"></p>
-<ul class="ulist" id="list"></ul>
-<button class="more" id="more" hidden>さらに表示</button>''', crumbs=[('news.html', '制作決定'), (None, '放送・公開前のアニメ')], current='news.html', script=NSCRIPT('upcoming'))
-page('released.html', '放送・公開済みになったアニメ', f'''<h1>放送・公開済みになったアニメ</h1>
-<p class="lead">放送・公開前の一覧に載っていて、放送・公開が始まったので一覧から外れた作品（放送・公開の新しい順、毎日更新）。日付は記事で発表された放送・公開日です。<span class="ic" style="--h:25">映</span>映画 <span class="ic" style="--h:250">TV</span>テレビ <span class="ic" style="--h:150">配</span>配信・OVA・CM・動画 <span class="ic" style="--h:70">?</span>媒体未発表 <span class="sq">続</span>続編・新作</p>
-<div class="seg" id="seg">{ubtn}</div>
-<div class="sbar"><input type="search" id="q" placeholder="作品名で検索"></div>
-<div class="opts"><label><input type="checkbox" id="newonly"> 新規のアニメ化だけ</label><a class="jump" href="upcoming.html">放送・公開前のアニメ →</a><a class="jump" href="news.html">制作決定ニュースの一覧 →</a></div>
-<p class="count" id="count"></p>
-<ul class="ulist" id="list"></ul>
-<button class="more" id="more" hidden>さらに表示</button>''', crumbs=[('news.html', '制作決定'), ('upcoming.html', '放送・公開前のアニメ'), (None, '放送・公開済み')], current='news.html', script=NSCRIPT('released'))
+# 制作決定ニュースは独立したサイト（nzanke/anime-news）に移した。古いページは新しいサイトへ移す案内だけを置く
+# （data/news.json は毎日の収集が置き、anime-news がここから取っていく）
+for _old, _new in (('news.html', ''), ('upcoming.html', 'upcoming.html'), ('released.html', 'released.html')):
+    with open(os.path.join(OUT, _old), 'w', encoding='utf-8') as f:
+        f.write(f'<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>アニメ制作決定ニュース（移転しました）</title>'
+                f'<meta http-equiv="refresh" content="0; url={NEWS_SITE}{_new}"><link rel="canonical" href="{NEWS_SITE}{_new}"></head>'
+                f'<body><p>アニメ制作決定ニュースは <a href="{NEWS_SITE}{_new}">{NEWS_SITE}{_new}</a> に移転しました。</p></body></html>')
 
 # ツール集（スタッフランキングとクレジット表への入口）
 TOOLS = [('ranking.html', 'スタッフランキング', '年代ごとに、多くのテレビアニメに関わったスタッフを並べます。役職で切り替えられます。'),
