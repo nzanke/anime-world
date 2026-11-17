@@ -7,7 +7,7 @@
   gamebiz … 今期の「放送・配信情報一覧」記事（Netflix・Prime Video など）
   しょぼいカレンダー … 地上波キー局・TOKYO MX の放送予定
 """
-import json, os, sys, time, datetime as dt, urllib.request, urllib.parse, re
+import json, os, sys, time, html, datetime as dt, urllib.request, urllib.parse, re
 
 UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36'
 JST = dt.timezone(dt.timedelta(hours=9))
@@ -103,22 +103,16 @@ if pg:
     try: tids |= set(re.findall(r'<TID>(\d+)</TID>', get(f'https://cal.syoboi.jp/db.php?Command=ProgLookup&Range={a2}-{b2}').decode('utf-8')))
     except Exception: pass
     tids = sorted(tids, key=int)
-    # 今期〜次のクールに始まる作品（番組表にまだ入っていない新番組も）
-    first = {(y, (q - 1) * 3 + m) for y, q in cours[1:] for m in (1, 2, 3)}
-    try:
-        lu = (now - dt.timedelta(days=150)).strftime('%Y%m%d_000000')
-        allt = get(f'https://cal.syoboi.jp/db.php?Command=TitleLookup&TID=*&LastUpdate={lu}-', timeout=90).decode('utf-8')
-        new_tids = [g['TID'] for g in (dict(re.findall(r'<(\w+)>(.*?)</\1>', it, re.S)) for it in re.findall(r'<TitleItem\b.*?</TitleItem>', allt, re.S))
-                    if g.get('Cat') in ('1', '10') and (int(g.get('FirstYear') or 0), int(g.get('FirstMonth') or 0)) in first]
-        tids = sorted(set(tids) | set(new_tids), key=int)
-        log.append(f'syoboi 今期・次期に始まる作品\t{len(new_tids)}（作品情報{allt.count("<TitleItem")}件・{len(allt)}字）')
-    except Exception as e:
-        log.append(f'syoboi 新番組\tFAIL {e}')
+
     parts = []
     for i in range(0, len(tids), 50):
-        b = get(f'https://cal.syoboi.jp/db.php?Command=TitleLookup&TID={",".join(tids[i:i+50])}')
-        parts.append(b.decode('utf-8'))
-        time.sleep(1)
+        for k in range(4):
+            try:
+                b = get(f'https://cal.syoboi.jp/db.php?Command=TitleLookup&TID={",".join(tids[i:i+50])}', tries=1)
+                parts.append(b.decode('utf-8')); break
+            except Exception as e:
+                time.sleep(15 * (k + 1))     # 「アクセス過多」なら待ってやり直す
+        time.sleep(3)
     open(os.path.join(OUT, 'syoboi_titles.xml'), 'w', encoding='utf-8').write('\n'.join(parts))
     log.append(f'syoboi_titles.xml\t{len(tids)}作品')
 
@@ -153,10 +147,33 @@ if pg:
     json.dump(wiki, open(os.path.join(OUT, 'wiki.json'), 'w', encoding='utf-8'), ensure_ascii=False)
     log.append(f'wiki.json\t配信表のある記事{ok}')
 
+    # kansou.me の新番組一覧（次のクールの作品と公式サイトを、しょぼいカレンダーより早く拾う）
+    KS = {1: 'winter', 2: 'spring', 3: 'summer', 4: 'autumn'}
+    kansou = []
+    for name, u in [('kansou_top.html', 'https://www.kansou.me/')] + [(f'kansou_{y}{q:02d}.html', f'https://www.kansou.me/archive/{y}_{KS[q]}.html') for y, q in cours[1:]]:
+        b = save(name, u)
+        if not b: continue
+        h = b.decode('utf-8', 'replace').replace('<!--', '').replace('-->', '')   # 放送局の欄の一部がコメントの中にある
+        for tr in re.findall(r'(?is)<tr\b.*?</tr>', h):
+            tds = re.findall(r'(?is)<td\b[^>]*>(.*?)</td>', tr)
+            if len(tds) < 3: continue
+            m = re.search(r'(?is)<a\b[^>]*href=["\'](https?://[^"\']+)["\'][^>]*>(.*?)</a>', tds[1])
+            title = re.sub(r'<[^>]+>', '', m.group(2) if m else tds[1]).strip()
+            if not title: continue
+            st = re.sub(r'(?is)<br\s*/?>', '\n', tds[2]); st = re.sub(r'<[^>]+>', ' ', st)
+            kansou.append({'page': name, 'date': re.sub(r'<[^>]+>', '', tds[0]).strip(), 'title': html.unescape(title),
+                           'url': m.group(1) if m else '', 'stations': html.unescape(st).strip()})
+    json.dump(kansou, open(os.path.join(OUT, 'kansou.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+    log.append(f'kansou.json\t{len(kansou)}作品')
+
     # 公式サイトの放送・配信情報のページ（いちばん早く発表される取り先）
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import official
-    urls = official_urls = official.official_urls('\n'.join(parts))
+    urls = official.official_urls('\n'.join(parts))
+    have = {u.rstrip('/') for _, u in urls.values()}
+    for k in kansou:
+        if k['url'] and k['url'].rstrip('/') not in have:
+            urls['k:' + k['title']] = (k['title'], k['url']); have.add(k['url'].rstrip('/'))
     off = official.fetch_all(urls)
     rendered = official.render([v for v in off.values() if official.thin(v)])
     log.append(f'公式サイト：ブラウザで読み直した{rendered}')
