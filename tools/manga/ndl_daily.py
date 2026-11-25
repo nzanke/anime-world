@@ -1,6 +1,6 @@
 """国会図書館サーチ OAI-PMH から、1日に登録・更新された書誌のうち、漫画（NDC 726.1）でISBNのあるものを取る。
 GitHub Actions で1日1回動かす。取り終えた日は data/manga/ndl_daily/YYYY-MM-DD.jsonl.gz に保存し、
-まだ取れていない日（最大7日前まで）を古い順に取る。止まっても次の回に続きから取る。
+まだ取れていない日（最大14日前まで）を古い順に取る。止まっても次の回に続きから取る。
 
 保存する項目は、全国書誌データ検索のTSV（ndl_tsv.jsonl.gz）と同じ名前にそろえてある。
 使い方: python3 ndl_daily.py [YYYY-MM-DD]  （日付を渡すとその日だけ取る）
@@ -110,7 +110,7 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1]:
         days = [sys.argv[1]]
     else:
-        days = [(jst - dt.timedelta(days=k)).strftime("%Y-%m-%d") for k in range(7, 0, -1)]
+        days = [(jst - dt.timedelta(days=k)).strftime("%Y-%m-%d") for k in range(14, 0, -1)]
         days = [d for d in days if not os.path.exists(f"{OUT}/{d}.jsonl.gz")]
     print("取る日:", days, flush=True)
     for day in days:
