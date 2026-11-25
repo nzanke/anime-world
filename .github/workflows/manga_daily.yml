@@ -1,0 +1,33 @@
+name: 国会図書館の新着コミック書誌を取る（1日1回）
+on:
+  workflow_dispatch:
+    inputs:
+      day:
+        description: 'その日だけ取る（YYYY-MM-DD）。空なら、まだ取れていない日を最大7日前まで取る'
+        required: false
+        default: ''
+permissions:
+  contents: write
+concurrency:
+  group: manga-daily
+  cancel-in-progress: false
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools/manga
+            data/manga/ndl_daily
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 取る
+        env:
+          COMMIT: '1'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python3 tools/manga/ndl_daily.py "${{ inputs.day }}"
