@@ -84,7 +84,13 @@ rows, seen = [], set()
 labpair = defaultdict(lambda: defaultdict(int))
 rejected = []
 stat = {"ndl": 0, "day": 0, "vol": 0, "hk_add": 0, "adult": 0}
-for line in gzip.open(NDL, "rt", encoding="utf-8"):
+import glob
+def ndl_lines():
+    # 毎日の新着（新しい日ほど先）→ 手作業で落としたTSV の順に読む。同じISBNは先に読んだほうを使う
+    for p_ in sorted(glob.glob("/home/claude/anime-world/data/manga/ndl_daily/*.jsonl.gz"), reverse=True):
+        yield from gzip.open(p_, "rt", encoding="utf-8")
+    yield from gzip.open(NDL, "rt", encoding="utf-8")
+for line in ndl_lines():
     d = json.loads(line)
     isbn = d["ISBN"].replace("-", "").strip()
     m = re.match(r"(\d{4})\.(\d{1,2})", d["出版年月日等"])
